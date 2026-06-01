@@ -1,0 +1,1047 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ROUND 1 纯数字验证码 — 验证码攻防PK</title>
+<style>
+:root {
+  --bg: #f0f2f5; --surface: #ffffff; --card: #f8f9fb;
+  --border: #d4d9e0; --text: #1f2937; --muted: #6b7280;
+  --green: #16a34a; --purple: #7c3aed; --red: #dc2626;
+  --blue: #2563eb; --yellow: #b45309; --orange: #ea580c;
+  --green-light: #d1fae5; --blue-light: #dbeafe; --purple-light: #ede9fe;
+  --red-light: #fee2e2; --yellow-light: #fef3c7;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--text); font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 17px; line-height: 1.7; min-height: 100vh;
+}
+.container { max-width: 1100px; margin: 0 auto; padding: 20px 24px 60px; }
+
+/* Header */
+.header { text-align: center; padding: 40px 20px 24px; }
+.header h1 { font-size: 42px; font-weight: 900; background: linear-gradient(135deg, var(--green), var(--blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.header .subtitle { font-size: 18px; color: var(--muted); margin-top: 8px; }
+.header .intro { max-width: 700px; margin: 16px auto 0; font-size: 16px; color: var(--muted); }
+
+/* Navigation */
+.nav-bar { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-bottom: 30px; }
+.nav-btn { padding: 8px 20px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 15px; font-weight: 600; transition: all .2s; }
+.nav-btn:hover { border-color: var(--green); color: var(--green); }
+
+/* Progress */
+.progress-bar { margin-bottom: 36px; text-align: center; }
+
+/* Round Section */
+.round-section { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 28px; margin-bottom: 28px; transition: all .3s; }
+.round-header { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; flex-wrap: wrap; }
+.round-num { font-size: 52px; font-weight: 900; color: var(--green); text-shadow: 0 0 30px rgba(22,163,74,.3); line-height: 1; }
+.round-year { font-size: 20px; color: var(--yellow); font-weight: 700; }
+.round-title { font-size: 22px; font-weight: 700; }
+.round-desc { font-size: 16px; color: var(--muted); margin-bottom: 20px; }
+.round-status { display: inline-block; padding: 4px 14px; border-radius: 20px; font-size: 14px; font-weight: 600; background: var(--card); color: var(--muted); }
+.round-status.st-active { background: var(--yellow-light); color: var(--yellow); }
+.round-status.st-cracked { background: var(--green-light); color: var(--green); }
+
+/* Knowledge Section */
+.knowledge-section { background: var(--blue-light); border: 1px solid rgba(37,99,235,.2); border-radius: 12px; padding: 20px 22px; margin: 16px 0; }
+.knowledge-section h4 { font-size: 17px; color: var(--blue); margin-bottom: 10px; }
+.knowledge-section p { font-size: 15px; color: var(--muted); margin-bottom: 8px; line-height: 1.8; }
+.knowledge-section .guide-q { margin-top: 10px; padding: 10px 14px; background: var(--yellow-light); border-left: 3px solid var(--yellow); border-radius: 4px; font-size: 15px; color: var(--yellow); font-weight: 600; }
+
+/* Puzzle Section */
+.puzzle-card { background: var(--card); border: 2px dashed var(--border); border-radius: 14px; padding: 22px 20px; margin: 16px 0; transition: all .4s; }
+.puzzle-card.unlocked { border-color: var(--green); border-style: solid; background: var(--green-light); box-shadow: 0 0 20px rgba(22,163,74,.1); }
+.puzzle-card h4 { font-size: 17px; margin-bottom: 6px; }
+.puzzle-card .puzzle-hint { font-size: 14px; color: var(--muted); margin-bottom: 14px; }
+.piece-pool { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.piece { display: flex; align-items: center; gap: 6px; padding: 10px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; cursor: grab; font-size: 15px; font-weight: 600; transition: all .2s; user-select: none; }
+.piece:hover { border-color: var(--blue); box-shadow: 0 0 10px rgba(37,99,235,.2); }
+.piece.dragging { opacity: .4; transform: scale(.95); }
+.piece .piece-icon { font-size: 20px; }
+.puzzle-rail { display: flex; gap: 12px; flex-wrap: wrap; }
+.puzzle-slot { flex: 1; min-width: 100px; min-height: 60px; border: 2px dashed var(--border); border-radius: 10px; display: flex; align-items: center; gap: 6px; padding: 8px 12px; font-size: 14px; color: var(--muted); position: relative; transition: all .2s; }
+.puzzle-slot.over { border-color: var(--blue); background: rgba(37,99,235,.06); }
+.puzzle-slot.filled { border-style: solid; }
+.puzzle-slot.ok { border-color: var(--green); background: var(--green-light); }
+.puzzle-slot.wrong { border-color: var(--red); background: var(--red-light); }
+.puzzle-slot .slot-num { position: absolute; top: -12px; left: 8px; background: var(--surface); color: var(--muted); font-size: 12px; padding: 1px 6px; border-radius: 8px; border: 1px solid var(--border); }
+.puzzle-feedback { margin-top: 10px; font-size: 15px; font-weight: 600; min-height: 22px; }
+.puzzle-feedback.ok { color: var(--green); }
+.puzzle-feedback.no { color: var(--red); }
+.unlock-btn { margin-top: 14px; padding: 10px 28px; border: none; border-radius: 10px; background: linear-gradient(135deg, var(--green), #15803d); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: all .2s; }
+.unlock-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 16px rgba(22,163,74,.3); }
+
+/* Arena */
+.arena-box { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-top: 16px; }
+.arena-stage { display: flex; gap: 20px; flex-wrap: wrap; margin: 14px 0; }
+.arena-canvas-wrap { flex: 1; min-width: 300px; }
+.arena-side { flex: 0 0 240px; display: flex; flex-direction: column; gap: 10px; }
+.stage-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.stage-display { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; min-height: 40px; }
+.arena-btn { padding: 10px 18px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 700; border: none; transition: all .2s; width: 100%; }
+.arena-btn.primary { background: linear-gradient(135deg, var(--green), #15803d); color: #fff; }
+.arena-btn.secondary { background: var(--blue-light); color: var(--blue); margin-top: 6px; }
+.arena-btn:hover { transform: translateY(-1px); }
+
+/* Progress Steps */
+.progress-steps { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.progress-step { flex: 1; min-width: 70px; text-align: center; padding: 8px 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 13px; color: var(--muted); transition: all .3s; }
+.progress-step.active { border-color: var(--yellow); color: var(--yellow); background: var(--yellow-light); font-weight: 700; }
+.progress-step.done { border-color: var(--green); color: var(--green); background: var(--green-light); }
+
+/* OCR Result */
+.ocr-result { margin-top: 16px; padding: 14px 18px; background: var(--green-light); border: 1px solid rgba(22,163,74,.3); border-radius: 10px; font-size: 15px; font-weight: 700; color: var(--green); display: none; text-align: center; }
+.ocr-result.show { display: block; animation: popIn .4s ease; }
+@keyframes popIn { 0%{transform:scale(.9);opacity:0} 100%{transform:scale(1);opacity:1} }
+
+/* Template items */
+.tpl-item { display: inline-block; width: 36px; height: 36px; line-height: 36px; text-align: center; background: var(--card); border: 1px solid var(--border); border-radius: 6px; font-size: 16px; font-weight: 700; margin: 3px; transition: all .3s; }
+.tpl-item.match { border-color: var(--green); background: var(--green-light); color: var(--green); box-shadow: 0 0 12px rgba(22,163,74,.4); transform: scale(1.1); }
+
+/* R2 specific */
+.proc-viz { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+.proc-arrow { font-size: 32px; color: var(--muted); }
+.proc-canvas-box { flex: 0 0 auto; }
+.proc-caption { font-size: 13px; color: var(--muted); margin-top: 6px; }
+.proc-controls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.proc-btn { padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 14px; font-weight: 600; transition: all .2s; }
+.proc-btn:hover:not(:disabled) { border-color: var(--blue); background: var(--blue-light); }
+.proc-btn:disabled { opacity: .4; cursor: not-allowed; }
+.proc-btn.done { border-color: var(--green); color: var(--green); background: var(--green-light); }
+
+/* R2 feature analysis */
+.r2-feat-char { display: inline-block; width: 44px; height: 54px; line-height: 54px; text-align: center; background: var(--surface); border: 2px solid var(--border); border-radius: 8px; margin: 3px; font-size: 20px; font-weight: 800; font-family: monospace; position: relative; transition: all .3s; }
+.r2-feat-char.analyzing { border-color: var(--yellow); box-shadow: 0 0 12px rgba(180,83,9,.4); }
+.r2-feat-char.matched { border-color: var(--green); background: var(--green-light); box-shadow: 0 0 10px rgba(22,163,74,.3); }
+.r2-feat-tags { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.r2-score-bar { height: 6px; background: var(--surface); border-radius: 3px; margin-top: 4px; overflow: hidden; }
+.r2-score-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width .6s ease; width: 0; }
+.r2-lib-item { display: inline-block; text-align: center; width: 56px; padding: 4px 2px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; margin: 2px; font-size: 16px; font-weight: 700; font-family: monospace; transition: all .3s; }
+.r2-lib-item.best { border-color: var(--green); background: var(--green-light); box-shadow: 0 0 8px rgba(22,163,74,.25); transform: scale(1.08); }
+
+/* R3 specific */
+.r3-img { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; font-size: 28px; background: var(--surface); border: 2px solid var(--border); border-radius: 10px; cursor: pointer; transition: all .2s; position: relative; }
+.r3-img:hover { border-color: var(--blue); }
+.r3-img.selected { border-color: var(--blue); background: var(--blue-light); box-shadow: 0 0 10px rgba(37,99,235,.3); }
+.crack-grid { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.cc { width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; font-size: 28px; background: var(--surface); border: 2px solid var(--border); border-radius: 10px; transition: all .3s; }
+.cc.ai-scan { border-color: var(--yellow); box-shadow: 0 0 16px rgba(180,83,9,.5); }
+.cc.ai-pick { border-color: var(--green); background: var(--green-light); box-shadow: 0 0 12px rgba(22,163,74,.4); }
+.ai-tag { display: none; position: absolute; top: -10px; right: -8px; background: var(--green); color: #fff; font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 700; }
+.feat-tag { display: inline-block; font-size: 9px; padding: 1px 4px; border-radius: 4px; margin: 1px; font-weight: 600; }
+.feat-tag.color { background: var(--red-light); color: var(--red); }
+.feat-tag.pos { background: var(--blue-light); color: var(--blue); }
+.feat-tag.shape { background: var(--purple-light); color: var(--purple); }
+.prob-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.prob-label { font-size: 12px; color: var(--muted); width: 50px; text-align: right; font-weight: 600; }
+.prob-track { flex: 1; height: 14px; background: var(--surface); border-radius: 7px; overflow: hidden; }
+.prob-fill { height: 100%; border-radius: 7px; transition: width .8s ease; width: 0; }
+.prob-fill.yes { background: var(--green); }
+.prob-fill.no { background: var(--red); }
+.prob-val { width: 36px; font-size: 12px; font-weight: 700; color: var(--muted); }
+
+/* R4 specific */
+.track-canvas { width: 100%; border: 1px solid var(--border); border-radius: 10px; cursor: crosshair; background: #fff; }
+.analysis-result { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
+.ar-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(48,54,61,.5); font-size: 14px; }
+.ar-row:last-child { border-bottom: none; }
+.ar-analysis-ok { color: var(--green); }
+.ar-analysis-warn { color: var(--red); }
+.ar-key { color: var(--muted); }
+.ar-val { font-weight: 700; }
+.vh { color: var(--green); }
+.vb { color: var(--red); }
+
+/* R4 slider */
+.slider-bar { position: relative; height: 40px; background: var(--card); border: 1px solid var(--border); border-radius: 20px; margin: 16px 0; overflow: hidden; }
+.slider-fill { height: 100%; background: linear-gradient(90deg, var(--green-light), var(--green)); border-radius: 20px; width: 0; transition: width .05s; }
+.slider-btn { position: absolute; top: 2px; left: 2px; width: 36px; height: 36px; background: var(--surface); border: 2px solid var(--green); border-radius: 50%; cursor: grab; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.slider-piece { position: absolute; top: 4px; font-size: 28px; pointer-events: none; }
+.slider-hint { font-size: 14px; color: var(--muted); text-align: center; margin: 8px 0; }
+
+/* Toast */
+.toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--card); color: var(--text); padding: 12px 28px; border-radius: 30px; font-size: 15px; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,.15); z-index: 999; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.toast.show { opacity: 1; }
+
+/* R4 无感验证 */
+.ar-stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; min-width: 100px; display: flex; flex-direction: column; gap: 2px; }
+.ar-stat-label { font-size: 12px; color: var(--muted); }
+.ar-stat-val { font-size: 18px; font-weight: 700; color: var(--text); }
+.r4-act-card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 16px; display: flex; gap: 14px; align-items: flex-start; }
+.r4-act-card .act-data { flex: 1; font-size: 13px; color: var(--muted); line-height: 1.8; }
+.r4-act-card .act-judge { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.r4-act-card .act-judge button { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text); cursor: pointer; font-size: 13px; font-weight: 600; transition: all .15s; }
+.r4-act-card .act-judge button.sel-human { background: var(--green-light); border-color: var(--green); color: var(--green); }
+.r4-act-card .act-judge button.sel-bot { background: var(--red-light); border-color: var(--red); color: var(--red); }
+
+@media (max-width: 700px) {
+  .round-num { font-size: 36px; }
+  .header h1 { font-size: 28px; }
+  .proc-viz { flex-direction: column; align-items: stretch; }
+  .proc-arrow { text-align: center; transform: rotate(90deg); }
+  .arena-stage { flex-direction: column; }
+  .arena-side { flex: 0 0 auto; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <!-- Header -->
+  <div class="header">
+    <h1>🔢 ROUND 1 · 纯数字验证码</h1>
+    <div class="subtitle">1997年 · 模板像素匹配破解</div>
+    <div class="intro">
+      阅读下方知识介绍，完成拼图解锁技能，进入破解竞技场亲自攻破这道防线吧！
+    </div>
+  </div>
+
+  <!-- ==================== R1: 纯数字验证码 ==================== -->
+  <div class="round-section" id="r1">
+    <div class="round-header">
+      <span class="round-num">ROUND 1</span>
+      <span class="round-year">1997年</span>
+      <span class="round-title">纯数字验证码</span>
+      <span class="round-status" id="r1-status">🔒 等待破解</span>
+    </div>
+    <!-- 验证码预览 -->
+    <div style="text-align:center;margin:14px 0">
+      <canvas id="r1-captcha-canvas" width="320" height="80" style="background:#fff;border-radius:8px;border:1px solid var(--border)"></canvas>
+      <div style="font-size:13px;color:var(--muted);margin-top:6px">▲ 试试刷新：<button onclick="refreshR1()" style="background:var(--surface);color:var(--blue);border:1px solid var(--border);border-radius:6px;padding:4px 12px;cursor:pointer;font-size:13px">🔄 换一个</button></div>
+    </div>
+
+    <!-- 知识介绍 -->
+    <div class="knowledge-section">
+      <h4>📖 知识介绍</h4>
+      <p>面对纯数字验证码，黑客的破解工具是<b style="color:var(--blue)">模板像素匹配</b>——一种简单粗暴但极其有效的方法。</p>
+      <p>核心思路分两个阶段：<b style="color:var(--purple)">①图像预处理</b>——先对图片做"大扫除"，把彩色转灰白（灰度化）、灰白变纯黑白（二值化）、过滤掉零散噪点（去噪）、按间距把粘连字符切开（图像分割），让图片变成干干净净的独立数字块。</p>
+      <p>然后是<b style="color:var(--purple)">②模板像素识别</b>——把每个独立数字和事先存好的0-9"标准模板库"逐一进行像素级比对，哪个模板的像素点重合率最高，就认定是这个数字。最后把所有识别出的数字串起来提交。</p>
+      <p>这整个过程可以归纳为一条明确的破解流水线：从"拿到图片"到"提交答案"，中间有几个关键环节？它们的先后顺序是什么？</p>
+      <div class="guide-q">💡 <b>引导提问</b>：请仔细阅读上文，模板匹配破解需要经过哪4个关键步骤？从碎片池中选出正确流程并排列。</div>
+    </div>
+
+    <!-- 拼图（技能卡） -->
+    <div class="puzzle-card" id="pc-r1">
+      <h4>🧩 技能卡：模板像素匹配</h4>
+      <p class="puzzle-hint">阅读上方知识介绍，将4块碎片拖入下方正确位置</p>
+      <div class="piece-pool">
+        <div class="piece" draggable="true" data-id="r1-4" ondragstart="pieceDrag(event)"><span class="piece-icon">📤</span>拼接提交</div>
+        <div class="piece" draggable="true" data-id="r1-1" ondragstart="pieceDrag(event)"><span class="piece-icon">📥</span>取图</div>
+        <div class="piece" draggable="true" data-id="r1-2" ondragstart="pieceDrag(event)"><span class="piece-icon">⚙️</span>图像预处理</div>
+        <div class="piece" draggable="true" data-id="r1-3" ondragstart="pieceDrag(event)"><span class="piece-icon">🔢</span>模板像素识别</div>
+      </div>
+      <div class="puzzle-rail" id="rail-r1">
+        <div class="puzzle-slot" data-expect="r1-1" ondragover="slotOver(event)" ondragleave="slotLeave(event)" ondrop="slotDrop(event,this,'r1')"><span class="slot-num">第1步</span>拖到这里</div>
+        <div class="puzzle-slot" data-expect="r1-2" ondragover="slotOver(event)" ondragleave="slotLeave(event)" ondrop="slotDrop(event,this,'r1')"><span class="slot-num">第2步</span>拖到这里</div>
+        <div class="puzzle-slot" data-expect="r1-3" ondragover="slotOver(event)" ondragleave="slotLeave(event)" ondrop="slotDrop(event,this,'r1')"><span class="slot-num">第3步</span>拖到这里</div>
+        <div class="puzzle-slot" data-expect="r1-4" ondragover="slotOver(event)" ondragleave="slotLeave(event)" ondrop="slotDrop(event,this,'r1')"><span class="slot-num">第4步</span>拖到这里</div>
+      </div>
+      <div class="puzzle-feedback" id="pf-r1"></div>
+      <button class="unlock-btn" onclick="tryUnlockPuzzle('r1')">⚡ 解锁技能 · 进入破解竞技场</button>
+    </div>
+
+    <!-- 破解竞技场 -->
+    <div id="r1-arena"></div>
+    <div class="puzzle-feedback ok" id="r1-crack-hint" style="text-align:center;margin-top:8px;font-size:15px">🔑 先完成拼图解锁技能，才能进入竞技场</div>
+  </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ============== STATE ==============
+const puzzleState = { r1: false, r2: false, r3: false };
+let currentDragId = null;
+let currentDragEl = null;
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+function navTo(id) {
+  document.getElementById(id).scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function updateProgress() {
+  const total = Object.values(puzzleState).filter(Boolean).length;
+  const cracked = ['r1','r2','r3'].filter(r => {
+    const st = document.getElementById(r+'-status');
+    return st && st.classList.contains('st-cracked');
+  }).length;
+  const el = document.getElementById('progress-display');
+  if (el) {
+    el.innerHTML = `
+      <div style="display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-bottom:12px">
+        <div><span style="font-size:22px;font-weight:800;color:var(--green)">${total}</span><span style="color:var(--muted);font-size:13px"> / 3 技能解锁</span></div>
+        <div><span style="font-size:22px;font-weight:800;color:var(--purple)">${cracked}</span><span style="color:var(--muted);font-size:13px"> / 3 关卡破解</span></div>
+      </div>
+      ${total===3&&cracked===3?'<div style="color:var(--green);font-weight:800;font-size:15px">🏆 全部完成！你是本节课的破解大师！</div>':''}
+    `;
+  }
+}
+function drawR1Captcha() {
+  const c = document.getElementById('r1-captcha-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  const nums = Array.from({length:4},()=>Math.floor(Math.random()*10));
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle = '#1a1a2e'; ctx.font = 'bold 42px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  nums.forEach((n,i)=>{
+    ctx.save();
+    ctx.translate(40 + i*80, c.height/2);
+    ctx.rotate((Math.random()-.5)*0.08);
+    ctx.fillText(n,0,0);
+    ctx.restore();
+  });
+  // 纯数字，无背景干扰
+}
+function refreshR1() {
+  drawR1Captcha();
+}
+
+// ============== PUZZLE DRAG & DROP ==============
+function pieceDrag(e) {
+  currentDragId = e.currentTarget.dataset.id;
+  currentDragEl = e.currentTarget;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', currentDragId);
+}
+function slotOver(e) { e.preventDefault(); e.currentTarget.classList.add('over'); }
+function slotLeave(e) { e.currentTarget.classList.remove('over'); }
+function slotDrop(e, slot, round) {
+  e.preventDefault(); slot.classList.remove('over');
+  const dragId = e.dataTransfer.getData('text/plain') || currentDragId;
+  if (!dragId) return;
+  const dragEl = document.querySelector(`.piece[data-id="${dragId}"]`);
+  if (dragEl) dragEl.classList.remove('dragging');
+  const expect = slot.dataset.expect;
+  const matched = dragId === expect;
+  const icon = dragEl ? dragEl.querySelector('.piece-icon').textContent : '';
+  const txt = dragEl ? dragEl.childNodes[1]?.textContent || dragEl.textContent.replace(icon,'').trim() : dragId;
+  slot.innerHTML = `<span class="slot-num">${slot.querySelector('.slot-num').textContent}</span>${icon}${txt}`;
+  slot.dataset.filled = dragId;
+  slot.classList.remove('filled','ok','wrong');
+  slot.classList.add('filled', matched ? 'ok' : 'wrong');
+  checkPuzzle(round);
+  currentDragId = null; currentDragEl = null;
+}
+function checkPuzzle(round) {
+  const rail = document.getElementById('rail-r'+round.slice(1));
+  const slots = rail ? rail.querySelectorAll('.puzzle-slot') : [];
+  const fb = document.getElementById('pf-r'+round.slice(1));
+  const allFilled = [...slots].every(s => s.dataset.filled);
+  const allOk = [...slots].every(s => s.classList.contains('ok'));
+  if (!allFilled) { if(fb) { fb.textContent=''; fb.className='puzzle-feedback'; } return; }
+  if (allOk) {
+    if(fb) { fb.textContent = '🎉 拼图完整！顺序全部正确！点击下方按钮解锁技能～'; fb.className='puzzle-feedback ok'; }
+  } else {
+    if(fb) { fb.textContent = '❌ 有些位置不对，红色框的重新拖一下试试'; fb.className='puzzle-feedback no'; }
+  }
+}
+function tryUnlockPuzzle(round) {
+  const rail = document.getElementById('rail-r'+round.slice(1));
+  const slots = rail ? rail.querySelectorAll('.puzzle-slot') : [];
+  const allOk = [...slots].every(s => s.classList.contains('ok'));
+  if (!allOk) { showToast('❗ 先把四块拼图都拖到正确位置！'); return; }
+  const card = document.getElementById('pc-'+round);
+  card.classList.add('unlocked');
+  puzzleState[round] = true;
+  showToast('⚡ 技能解锁！破解竞技场已开放！');
+  const hint = document.getElementById(round+'-crack-hint');
+  if (hint) hint.textContent = '';
+  openArena(round);
+  const st = document.getElementById(round+'-status');
+  if (st) { st.textContent = '⚔️ 破解进行中'; st.className = 'round-status st-active'; }
+  updateProgress();
+}
+function markCracked(round) {
+  const st = document.getElementById(round+'-status');
+  if (st) { st.textContent = '✅ 破解成功！'; st.className = 'round-status st-cracked'; }
+  showToast('🎉 关卡破解成功！'); updateProgress();
+  // R2: reveal deep learning card
+  if (round==='r2') {
+    const dl = document.getElementById('r2-dl-card');
+    if (dl) { dl.style.display = 'block'; dl.style.animation = 'popIn .5s ease'; }
+  }
+}
+
+// ============== ARENAS ==============
+function openArena(round) {
+  const el = document.getElementById(round+'-arena');
+  if (!el || el.dataset.open) return;
+  el.dataset.open = '1';
+  if (round==='r1') buildR1Arena(el);
+  else if (round==='r2') buildR2Arena(el);
+  else if (round==='r3') buildR3Arena(el);
+}
+
+// ============== R1 ARENA: 模板像素匹配可视化 ==============
+function buildR1Arena(el) {
+  const code = Array.from({length:4},()=>Math.floor(Math.random()*10)).join('');
+  el.innerHTML = `
+    <div class="arena-box">
+      <div style="font-size:16px;font-weight:700;margin-bottom:14px">🤖 体验模板像素匹配全过程</div>
+      <div class="progress-steps">
+        <div class="progress-step" id="r1s1">📥 取图</div>
+        <div class="progress-step" id="r1s2">⚙️ 图像预处理</div>
+        <div class="progress-step" id="r1s3">🔢 模板像素识别</div>
+        <div class="progress-step" id="r1s4">📤 拼接提交</div>
+      </div>
+      <div class="arena-stage">
+        <div class="arena-canvas-wrap">
+          <div class="stage-label">验证码图像（处理中）</div>
+          <div style="position:relative">
+            <canvas id="r1-arena-canvas" width="400" height="140" style="background:#fff;border-radius:10px"></canvas>
+            <div id="r1-scanline" style="display:none;position:absolute;left:0;width:100%;height:2px;background:linear-gradient(90deg,transparent,var(--green),transparent);box-shadow:0 0 10px var(--green);top:0"></div>
+          </div>
+        </div>
+        <div class="arena-side">
+          <div class="stage-label">字形模板库</div>
+          <div class="stage-display" id="r1-tpl-box">
+            ${[0,1,2,3,4,5,6,7,8,9].map(n=>`<span class="tpl-item" id="tpl-${n}">${n}</span>`).join('')}
+          </div>
+          <div class="stage-label">识别结果</div>
+          <div class="stage-display" id="r1-result-box" style="font-family:monospace;font-size:24px;font-weight:800;color:var(--muted);display:flex;align-items:center;gap:8px;min-height:60px">
+            <span>等待识别...</span>
+          </div>
+          <button class="arena-btn primary" id="r1-start-btn" onclick="startR1OCR('${code}')">🚀 启动模板匹配识别</button>
+          <button class="arena-btn secondary" id="r1-next-btn" style="display:none" onclick="nextR1Step()">⏭️ 下一步</button>
+        </div>
+      </div>
+      <div class="ocr-result" id="r1-ocr-result">🎉 破解成功！模板匹配识别结果：<strong style="color:var(--green);font-family:monospace;font-size:20px" id="r1-final-res"></strong> 验证通过！</div>
+    </div>`;
+  window.r1Step = 0; window.r1Code = code;
+  drawR1ArenaCaptcha(code);
+}
+function drawR1ArenaCaptcha(code) {
+  const c = document.getElementById('r1-arena-canvas');
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0,0,c.width,c.height);
+  ctx.fillStyle = '#1a1a2e'; ctx.font = 'bold 52px monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  code.split('').forEach((ch,i)=>{
+    ctx.fillText(ch, 60 + i*85, c.height/2);
+  });
+}
+window.startR1OCR = function(code) {
+  document.getElementById('r1-start-btn').style.display = 'none';
+  document.getElementById('r1-next-btn').style.display = 'block';
+  window.r1Step = 0; window.r1Code = code;
+  nextR1Step();
+};
+window.nextR1Step = function() {
+  window.r1Step++;
+  const s = window.r1Step;
+  const code = window.r1Code;
+  // Update progress (4 steps)
+  for(let i=1;i<=4;i++) {
+    const el = document.getElementById('r1s'+i);
+    if(!el) continue;
+    el.classList.remove('active','done');
+    if(i<s) el.classList.add('done');
+    else if(i===s) el.classList.add('active');
+  }
+  const c = document.getElementById('r1-arena-canvas');
+  const ctx = c ? c.getContext('2d') : null;
+  if(s===1) {
+    showToast('📥 第一步：取图——截取验证码图片');
+    if(c) { c.style.filter = 'brightness(1.3)'; setTimeout(()=>c.style.filter='',300); }
+  } else if(s===2) {
+    showToast('⚙️ 第二步：图像预处理——灰度→二值化→去噪→分割');
+    if(ctx && c) {
+      const imgData = ctx.getImageData(0,0,c.width,c.height);
+      for(let i=0;i<imgData.data.length;i+=4) {
+        const avg = (imgData.data[i]+imgData.data[i+1]+imgData.data[i+2])/3;
+        imgData.data[i]=imgData.data[i+1]=imgData.data[i+2]=avg;
+      }
+      ctx.putImageData(imgData,0,0);
+      setTimeout(() => {
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height);
+        ctx.fillStyle='#000'; ctx.font='bold 52px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        code.split('').forEach((ch,i)=>{
+          ctx.fillText(ch, 60+i*85, c.height/2);
+        });
+        r1ScanAnimation(code);
+      }, 500);
+    }
+  } else if(s===3) {
+    showToast('🔢 第三步：模板像素识别——逐像素比对模板库');
+    r1MatchAnimation(code);
+  } else if(s===4) {
+    showToast('📤 第四步：拼接提交——输出最终结果');
+    document.getElementById('r1-result-box').innerHTML = code.split('').map(ch=>`<span style="color:var(--green);font-size:28px">${ch}</span>`).join('');
+    document.getElementById('r1-final-res').textContent = code;
+    document.getElementById('r1-ocr-result').classList.add('show');
+    document.getElementById('r1-next-btn').style.display = 'none';
+    markCracked('r1');
+  }
+};
+function r1ScanAnimation(code) {
+  const c = document.getElementById('r1-arena-canvas');
+  const ctx = c.getContext('2d');
+  const scanline = document.getElementById('r1-scanline');
+  scanline.style.display = 'block';
+  let y = 0; const h = c.height;
+  const interval = setInterval(()=>{
+    y += 3;
+    scanline.style.top = y + 'px';
+    if (y >= h) {
+      clearInterval(interval); scanline.style.display = 'none';
+      // Draw boxes around each char
+      ctx.strokeStyle = '#3fb950'; ctx.lineWidth = 3;
+      code.split('').forEach((ch,i)=>{
+        setTimeout(()=>{
+          ctx.strokeRect(25+i*85, 25, 70, 90);
+        }, i*250);
+      });
+    }
+  }, 8);
+}
+function r1MatchAnimation(code) {
+  code.split('').forEach((ch,i)=>{
+    setTimeout(()=>{
+      const tpl = document.getElementById('tpl-'+ch);
+      if(tpl) { tpl.classList.add('match'); setTimeout(()=>tpl.classList.remove('match'),600); }
+    }, i*400);
+  });
+  // Show interim result
+  let interim = '';
+  code.split('').forEach((ch,i)=>{
+    setTimeout(()=>{
+      interim += ch;
+      document.getElementById('r1-result-box').innerHTML = `<span style="color:var(--yellow);font-size:24px">${interim}</span><span style="color:var(--muted)">${'_'.repeat(4-interim.length)}</span>`;
+    }, i*400 + 200);
+  });
+}
+
+// ============== R2 ARENA: OCR破解5步流程 ==============
+function buildR2Arena(el) {
+  const chars = 'ABEHK23456789';
+  const code = Array.from({length:5},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+  window.r2Code = code; window.r2ArenaStep = 0;
+  el.innerHTML = `
+    <div class="arena-box">
+      <div style="font-size:16px;font-weight:700;margin-bottom:14px">🤖 体验 OCR 破解图形验证码全过程</div>
+      <div class="progress-steps">
+        <div class="progress-step" id="r2s1">📥 取图</div>
+        <div class="progress-step" id="r2s2">⚙️ 图像预处理</div>
+        <div class="progress-step" id="r2s3">🔬 特征提取</div>
+        <div class="progress-step" id="r2s4">🗂️ 特征库比对</div>
+        <div class="progress-step" id="r2s5">📤 拼接提交</div>
+      </div>
+      <div class="arena-stage">
+        <div class="arena-canvas-wrap" style="min-width:340px">
+          <div class="stage-label">原始验证码（带干扰）</div>
+          <canvas id="ar2o" width="340" height="110" style="display:block;background:#fff;border-radius:8px"></canvas>
+          <div class="proc-caption" id="ar2o-cap">彩色背景 · 扭曲 · 噪点 · 干扰线</div>
+          <div style="margin-top:16px">
+            <div class="stage-label">预处理后（逐步净化）</div>
+            <canvas id="ar2p" width="340" height="110" style="display:block;background:#fff;border-radius:8px"></canvas>
+            <div class="proc-caption" id="ar2p-cap">等待处理...</div>
+          </div>
+        </div>
+        <div class="arena-side" style="flex:0 0 300px">
+          <div class="stage-label">字符特征分析区</div>
+          <div class="stage-display" id="r2-feat-area" style="min-height:70px;font-size:13px;color:var(--muted)">
+            <span style="color:var(--muted)">等待特征提取...</span>
+          </div>
+          <div class="stage-label" style="margin-top:10px">特征库比对结果</div>
+          <div class="stage-display" id="r2-lib-area" style="min-height:70px;font-size:13px;color:var(--muted)">
+            <span style="color:var(--muted)">等待比对...</span>
+          </div>
+          <button class="arena-btn primary" id="r2-start-btn" onclick="startR2Arena('${code}')">🚀 启动OCR破解流程</button>
+          <button class="arena-btn secondary" id="r2-next-btn" style="display:none" onclick="nextR2Step()">⏭️ 下一步</button>
+        </div>
+      </div>
+      <div class="ocr-result" id="r2-result">🎉 破解成功！OCR识别结果：<strong style="color:var(--green);font-family:monospace;font-size:20px" id="r2-final-res"></strong> 验证通过！</div>
+    </div>`;
+  // Draw original noisy captcha
+  drawDist(document.getElementById('ar2o'), code, true);
+  // Processed canvas: initially same noisy version, will be cleaned
+  const pc = document.getElementById('ar2p');
+  if(pc) drawDist(pc, code, true);
+}
+
+window.startR2Arena = function(code) {
+  document.getElementById('r2-start-btn').style.display = 'none';
+  document.getElementById('r2-next-btn').style.display = 'block';
+  window.r2ArenaStep = 0;
+  nextR2Step();
+};
+
+window.nextR2Step = function() {
+  window.r2ArenaStep++;
+  const s = window.r2ArenaStep;
+  const code = window.r2Code;
+  // Update progress (5 steps)
+  for(let i=1;i<=5;i++) {
+    const el = document.getElementById('r2s'+i);
+    if(!el) continue;
+    el.classList.remove('active','done');
+    if(i<s) el.classList.add('done');
+    else if(i===s) el.classList.add('active');
+  }
+  if(s===1) {
+    // Step 1: 取图
+    showToast('📥 第一步：取图——截取含干扰的验证码图片');
+    const c = document.getElementById('ar2o');
+    if(c) { c.style.boxShadow = '0 0 20px rgba(37,99,235,.5)'; setTimeout(()=>c.style.boxShadow='',500); }
+    document.getElementById('ar2o-cap').textContent = '✅ 已截取验证码图片，存入内存';
+  } else if(s===2) {
+    // Step 2: 图像预处理
+    showToast('⚙️ 第二步：图像预处理——灰度化→二值化→去噪→分割');
+    r2PreprocessAnimation(code);
+  } else if(s===3) {
+    // Step 3: 特征提取
+    showToast('🔬 第三步：特征提取——提取每个字符的几何特征');
+    r2FeatureExtraction(code);
+  } else if(s===4) {
+    // Step 4: 特征库比对识别
+    showToast('🗂️ 第四步：特征库比对——逐字符打分匹配');
+    r2LibraryMatch(code);
+  } else if(s===5) {
+    // Step 5: 拼接提交
+    showToast('📤 第五步：拼接提交——输出最终结果');
+    document.getElementById('r2-final-res').textContent = code;
+    document.getElementById('r2-result').classList.add('show');
+    document.getElementById('r2-next-btn').style.display = 'none';
+    markCracked('r2');
+  }
+};
+
+// --- R2 Step 2: 图像预处理动画 ---
+function r2PreprocessAnimation(code) {
+  const pc = document.getElementById('ar2p');
+  const ctx = pc.getContext('2d');
+  document.getElementById('ar2p-cap').textContent = '灰度化 → 二值化 进行中...';
+  // Phase 1: Grayscale
+  let frame = 0;
+  const anim = setInterval(() => {
+    frame++;
+    const progress = Math.min(frame / 30, 1);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,pc.width,pc.height);
+    code.split('').forEach((ch,i)=>{
+      ctx.save(); ctx.font='bold 28px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      // Transition from color to black
+      const colorVal = Math.floor(255 * (1-progress));
+      ctx.fillStyle = `rgb(${colorVal},${colorVal},${colorVal})`;
+      ctx.translate(20+i*64, 55);
+      ctx.rotate((Math.random()-.5)*.3*(1-progress));
+      ctx.fillText(ch,0,0); ctx.restore();
+    });
+    // Fade out noise
+    const noiseAlpha = (1-progress)*0.5;
+    for(let k=0;k<30;k++) {
+      ctx.fillStyle=`rgba(${Math.random()*100},${Math.random()*100},${Math.random()*100},${noiseAlpha})`;
+      ctx.fillRect(Math.random()*pc.width,Math.random()*pc.height,2,2);
+    }
+    if(frame>=30) {
+      clearInterval(anim);
+      // Phase 2: Denoise + Segment
+      document.getElementById('ar2p-cap').textContent = '去噪 → 字符分割 进行中...';
+      setTimeout(()=>{
+        ctx.fillStyle='#fff'; ctx.fillRect(0,0,pc.width,pc.height);
+        code.split('').forEach((ch,i)=>{
+          ctx.save(); ctx.font='bold 28px monospace'; ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillStyle='#000';
+          ctx.translate(20+i*64, 55);
+          ctx.rotate((Math.random()-.5)*0.06);
+          ctx.fillText(ch,0,0); ctx.restore();
+        });
+        // Draw split lines between chars
+        ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1.5; ctx.setLineDash([3,4]);
+        for(let i=1;i<code.length;i++) {
+          ctx.beginPath(); ctx.moveTo(52+(i-1)*64, 20); ctx.lineTo(52+(i-1)*64, 90); ctx.stroke();
+        }
+        ctx.setLineDash([]);
+        // Clean noise particles
+        for(let k=0;k<10;k++) {
+          setTimeout(()=>{
+            ctx.fillStyle='rgba(255,255,255,.9)';
+            ctx.fillRect(Math.random()*pc.width,Math.random()*pc.height,6,6);
+          }, k*60);
+        }
+        document.getElementById('ar2p-cap').innerHTML = '✅ 预处理完成：<span style="color:var(--green)">黑白清晰、字符独立</span>';
+      }, 500);
+    }
+  }, 30);
+}
+
+// --- R2 Step 3: 特征提取 ---
+function r2FeatureExtraction(code) {
+  const featArea = document.getElementById('r2-feat-area');
+  let html = '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:flex-start">';
+  code.split('').forEach((ch,i)=>{
+    const feats = getRandomFeats(ch);
+    html += `<div class="r2-feat-char analyzing" id="r2f-${i}">${ch}</div>`;
+    html += `<div style="flex:1;min-width:130px;font-size:11px;line-height:1.6" id="r2ft-${i}">`;
+    // Will be filled one by one
+    html += `<span style="color:var(--muted)">分析中...</span>`;
+    html += `</div>`;
+  });
+  html += '</div>';
+  featArea.innerHTML = html;
+  // Animate feature extraction per character
+  code.split('').forEach((ch,i)=>{
+    setTimeout(()=>{
+      const ftDiv = document.getElementById('r2ft-'+i);
+      const feats = getRandomFeats(ch);
+      ftDiv.innerHTML = feats.map(f=>`<span class="feat-tag ${f.type}">${f.label}</span>`).join(' ');
+      const charDiv = document.getElementById('r2f-'+i);
+      charDiv.classList.remove('analyzing');
+      charDiv.classList.add('matched');
+    }, i*550 + 300);
+  });
+}
+
+function getRandomFeats(ch) {
+  // Generate plausible geometric features for each character
+  const pool = {
+    'A': [{label:'斜线交叉',type:'shape'},{label:'高宽比1:1',type:'pos'},{label:'锐角',type:'shape'},{label:'上窄下宽',type:'color'}],
+    'B': [{label:'双弧线',type:'shape'},{label:'闭合圈',type:'shape'},{label:'高宽比3:2',type:'pos'},{label:'竖线左置',type:'pos'}],
+    'E': [{label:'三横线',type:'shape'},{label:'右侧开放',type:'pos'},{label:'直角拐点2',type:'shape'},{label:'高宽比3:2',type:'pos'}],
+    'H': [{label:'两竖一横',type:'shape'},{label:'左右对称',type:'pos'},{label:'直角拐点4',type:'shape'},{label:'高宽比3:2',type:'pos'}],
+    'K': [{label:'斜线交叉',type:'shape'},{label:'锐角',type:'shape'},{label:'竖线左置',type:'pos'},{label:'高宽比3:2',type:'pos'}],
+    '2': [{label:'弧线转弯',type:'shape'},{label:'底部直线',type:'shape'},{label:'开口朝左',type:'pos'},{label:'高宽比4:3',type:'pos'}],
+    '3': [{label:'双弧线',type:'shape'},{label:'上下闭口',type:'pos'},{label:'中部缩窄',type:'color'},{label:'高宽比4:3',type:'pos'}],
+    '4': [{label:'斜线交叉',type:'shape'},{label:'竖线右置',type:'pos'},{label:'直角拐点2',type:'shape'},{label:'高宽比3:2',type:'pos'}],
+    '5': [{label:'顶部直线',type:'shape'},{label:'弧线转弯',type:'shape'},{label:'中部开口',type:'pos'},{label:'高宽比4:3',type:'pos'}],
+    '6': [{label:'上弧线',type:'shape'},{label:'下闭合圈',type:'shape'},{label:'弯曲弧度大',type:'color'},{label:'高宽比4:3',type:'pos'}],
+    '7': [{label:'斜线+横线',type:'shape'},{label:'锐角',type:'shape'},{label:'右侧短竖',type:'pos'},{label:'高宽比3:2',type:'pos'}],
+    '8': [{label:'双闭合圈',type:'shape'},{label:'完全对称',type:'pos'},{label:'中部交汇点',type:'color'},{label:'高宽比4:3',type:'pos'}],
+    '9': [{label:'上闭合圈',type:'shape'},{label:'下弧线',type:'shape'},{label:'弯曲弧度大',type:'color'},{label:'高宽比4:3',type:'pos'}],
+  };
+  return pool[ch] || [{label:'线条走向',type:'shape'},{label:'弯曲弧度',type:'color'},{label:'拐点数量',type:'pos'},{label:'高宽比',type:'pos'}];
+}
+
+// --- R2 Step 4: 特征库比对 ---
+function r2LibraryMatch(code) {
+  const libArea = document.getElementById('r2-lib-area');
+  // Show candidate library
+  let libHtml = '<div style="font-size:11px;color:var(--muted);margin-bottom:6px">📚 特征库候选匹配（逐字符打分）：</div>';
+  code.split('').forEach((ch,i)=>{
+    // Generate 3-4 candidates per character, with the correct one getting highest score
+    const candidates = generateCandidates(ch);
+    libHtml += `<div style="margin-bottom:8px;font-size:12px"><b>字符${i+1}</b>（提取特征）→ 比对结果：</div>`;
+    libHtml += '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-bottom:4px">';
+    candidates.forEach(c => {
+      libHtml += `<div class="r2-lib-item" id="r2lib-${i}-${c.char}">${c.char}<br><span style="font-size:10px;color:var(--muted)">${c.score}%</span></div>`;
+    });
+    libHtml += '</div>';
+    libHtml += `<div class="r2-score-bar"><div class="r2-score-fill" id="r2score-${i}" style="width:0"></div></div>`;
+    libHtml += `<div style="font-size:11px;color:var(--muted);margin-top:2px" id="r2match-${i}">比对中...</div>`;
+  });
+  libArea.innerHTML = libHtml;
+  // Animate matching per char
+  code.split('').forEach((ch,i)=>{
+    setTimeout(()=>{
+      // Highlight best match
+      const best = document.getElementById('r2lib-'+i+'-'+ch);
+      if(best) best.classList.add('best');
+      document.getElementById('r2score-'+i).style.width = '87%';
+      document.getElementById('r2match-'+i).innerHTML = `✅ 最高分：<b style="color:var(--green)">${ch}</b>（87%匹配）`;
+    }, i*550 + 200);
+  });
+}
+
+function generateCandidates(correct) {
+  const all = 'ABEHK23456789'.split('').filter(x=>x!==correct);
+  const shuffled = all.sort(()=>Math.random()-.5);
+  const candidates = [
+    {char: correct, score: 87},
+    {char: shuffled[0], score: 42 + Math.floor(Math.random()*20)},
+    {char: shuffled[1], score: 22 + Math.floor(Math.random()*18)},
+  ];
+  return candidates.sort((a,b)=>b.score-a.score);
+}
+function drawDist(canvas, text, noisy) {
+  const ctx = canvas.getContext('2d'), w=canvas.width, h=canvas.height;
+  if (noisy) {
+    const g = ctx.createLinearGradient(0,0,w,h);
+    g.addColorStop(0,'#f8c8d0'); g.addColorStop(.5,'#d0e8f8'); g.addColorStop(1,'#d8f0c8');
+    ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+    for (let i=0;i<90;i++) {
+      ctx.fillStyle=`rgba(${Math.random()*120},${Math.random()*120},${Math.random()*120},.5)`;
+      ctx.fillRect(Math.random()*w,Math.random()*h,2,2);
+    }
+    for (let i=0;i<6;i++) {
+      ctx.strokeStyle=`rgba(${Math.random()*160},0,0,.3)`; ctx.beginPath();
+      ctx.moveTo(Math.random()*w,Math.random()*h); ctx.lineTo(Math.random()*w,Math.random()*h); ctx.stroke();
+    }
+  } else { ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h); }
+  const colors = noisy?['#c00','#00c','#080','#808','#840']:['#000','#111','#222','#000','#111'];
+  text.split('').forEach((ch,i)=>{
+    ctx.save(); ctx.font=`bold ${noisy?24:22}px monospace`; ctx.fillStyle=colors[i%colors.length];
+    const x=12+i*32, y=noisy?(30+(Math.random()-.5)*8):32;
+    ctx.translate(x,y); if(noisy) ctx.rotate((Math.random()-.5)*.5);
+    ctx.fillText(ch,0,0); ctx.restore();
+  });
+}
+
+// ============== R3: 行为验证码 滑块预览 & 竞技场 ==============
+function initR3Slider() {
+  const bar = document.getElementById('r3-slider-bar');
+  const btn = document.getElementById('r3-slider-btn');
+  const fill = document.getElementById('r3-fill');
+  const hint = document.getElementById('r3-slider-hint');
+  if (!bar || !btn) return;
+  let dragging = false, startX = 0, btnLeft = 2;
+  const getMax = () => bar.offsetWidth - btn.offsetWidth - 4;
+  btn.onmousedown = btn.ontouchstart = (e) => {
+    dragging = true;
+    startX = e.type === 'touchstart' ? e.touches[0].clientX : e.clientX;
+    btnLeft = btn.offsetLeft;
+    e.preventDefault();
+  };
+  document.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const cx = e.clientX;
+    const max = getMax();
+    let newLeft = Math.min(Math.max(btnLeft + cx - startX, 2), max);
+    btn.style.left = newLeft + 'px';
+    fill.style.width = (newLeft + btn.offsetWidth) + 'px';
+    const ratio = (newLeft - 2) / (max - 2);
+    if (ratio > 0.93) {
+      hint.innerHTML = '✅ <span style="color:var(--green)">验证通过！</span>系统已记录你的滑动轨迹，判断为<b style="color:var(--green)">人类</b>✅';
+    } else {
+      hint.textContent = '🔍 后台正在分析您的行为轨迹...';
+    }
+  });
+  document.addEventListener('touchmove', (e) => {
+    if (!dragging) return;
+    const cx = e.touches[0].clientX;
+    const max = getMax();
+    let newLeft = Math.min(Math.max(btnLeft + cx - startX, 2), max);
+    btn.style.left = newLeft + 'px';
+    fill.style.width = (newLeft + btn.offsetWidth) + 'px';
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+  document.addEventListener('touchend', () => { dragging = false; });
+}
+
+function buildR3Arena(el) {
+  el.innerHTML = `
+    <div class="arena-box">
+      <div style="font-size:16px;font-weight:700;margin-bottom:10px">🤖 模拟行为验证破解全过程</div>
+      <div style="font-size:14px;color:var(--muted);margin-bottom:16px">点击下方步骤按钮，逐步执行破解流程</div>
+      <div class="progress-steps">
+        <div class="progress-step" id="r3s1">📥 取图</div>
+        <div class="progress-step" id="r3s2">🔎 图像识别</div>
+        <div class="progress-step" id="r3s3">📐 计算距离</div>
+        <div class="progress-step" id="r3s4">🎭 模拟真人拖动</div>
+        <div class="progress-step" id="r3s5">✅ 验证结果</div>
+      </div>
+      <div style="margin:14px 0;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:16px;min-height:80px">
+        <canvas id="r3-crack-canvas" width="500" height="90" style="width:100%;border-radius:8px;background:#fff"></canvas>
+        <div id="r3-crack-log" style="margin-top:10px;font-size:13px;color:var(--muted);min-height:40px;font-family:monospace;line-height:1.8"></div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="proc-btn" id="r3b1" onclick="r3Phase(1)">① 取图</button>
+        <button class="proc-btn" id="r3b2" onclick="r3Phase(2)" disabled>② 图像识别</button>
+        <button class="proc-btn" id="r3b3" onclick="r3Phase(3)" disabled>③ 计算距离</button>
+        <button class="proc-btn" id="r3b4" onclick="r3Phase(4)" disabled>④ 模拟真人拖动</button>
+        <button class="proc-btn" id="r3b5" onclick="r3Phase(5)" disabled>⑤ 验证结果</button>
+      </div>
+      <div class="ocr-result" id="r3-crack-result">🎉 行为验证码被破解！但无感行为验证已经悄悄记录了黑客的所有异常行为，防住了这波攻击！</div>
+    </div>`;
+  // draw initial slider on canvas
+  const c = document.getElementById('r3-crack-canvas');
+  if (c) { const ctx = c.getContext('2d'); drawR3SliderBase(ctx, c, 0); }
+}
+function drawR3SliderBase(ctx, c, gapX) {
+  ctx.fillStyle = '#f0f0f0'; ctx.fillRect(0,0,c.width,c.height);
+  // track
+  ctx.fillStyle = '#ddd'; ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(10,30,c.width-20,30,8) : ctx.rect(10,30,c.width-20,30);
+  ctx.fill();
+  // gap hole
+  if (gapX > 0) {
+    ctx.fillStyle = '#bbb'; ctx.fillRect(gapX, 28, 36, 34);
+    ctx.strokeStyle = '#a371f7'; ctx.lineWidth = 2; ctx.strokeRect(gapX, 28, 36, 34);
+  }
+  // slider piece
+  const px = 10;
+  ctx.fillStyle = '#4CAF50'; ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(px, 28, 36, 34, 6) : ctx.rect(px, 28, 36, 34);
+  ctx.fill();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold 18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('▶', px+18, 45);
+}
+window.r3Phase = function(n) {
+  for (let i=1;i<=5;i++) {
+    const el = document.getElementById('r3s'+i);
+    if (!el) continue;
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
+  }
+  const btn = document.getElementById('r3b'+n);
+  if (btn) btn.classList.add('done');
+  const log = document.getElementById('r3-crack-log');
+  const c = document.getElementById('r3-crack-canvas');
+  const ctx = c ? c.getContext('2d') : null;
+  if (n === 1) {
+    if (log) log.innerHTML = '> 截取网页截图，提取滑块背景图...<br>> 图片尺寸：360×90px，已保存到内存';
+    if (ctx) drawR3SliderBase(ctx, c, 0);
+    showToast('📥 取图完成');
+    document.getElementById('r3b2').disabled = false;
+  } else if (n === 2) {
+    if (log) log.innerHTML += '<br>> 调用图像识别模块，检测缺口位置...<br>> 扫描像素亮度差异，缺口定位：x=<b style="color:#a371f7">220px</b>';
+    if (ctx && c) {
+      drawR3SliderBase(ctx, c, 220);
+      // draw detection mark
+      ctx.strokeStyle = '#f85149'; ctx.lineWidth = 2; ctx.setLineDash([4,3]);
+      ctx.strokeRect(218, 26, 40, 38);
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#f85149'; ctx.font = '11px monospace'; ctx.textAlign='left';
+      ctx.fillText('缺口 x=220', 218, 22);
+    }
+    showToast('🔎 缺口定位成功 x=220px');
+    document.getElementById('r3b3').disabled = false;
+  } else if (n === 3) {
+    if (log) log.innerHTML += '<br>> 滑块起始位置：x=10，目标位置：x=220<br>> 需要移动距离：<b style="color:#f0883e">210px</b>';
+    showToast('📐 计算距离：210px');
+    document.getElementById('r3b4').disabled = false;
+  } else if (n === 4) {
+    if (log) log.innerHTML += '<br>> 生成仿人类轨迹（加速→减速→微抖动）...<br>> 轨迹点数：48个，耗时模拟：680ms';
+    if (ctx && c) {
+      // animate slider moving
+      let px = 10, frame = 0;
+      const anim = setInterval(() => {
+        frame++;
+        const target = 220;
+        const progress = Math.min(frame / 50, 1);
+        // easing with natural wobble
+        const ease = progress < 0.5 ? 2*progress*progress : 1-2*(1-progress)*(1-progress);
+        px = 10 + ease * (target - 10) + (Math.random()-0.5)*2*(1-progress)*3;
+        drawR3SliderBase(ctx, c, 220);
+        // draw trail
+        ctx.strokeStyle = 'rgba(37,99,235,0.4)'; ctx.lineWidth=1; ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(10,45); ctx.lineTo(px, 45+(Math.random()-0.5)*4); ctx.stroke();
+        // move piece
+        ctx.fillStyle = '#4CAF50'; ctx.beginPath();
+        ctx.roundRect ? ctx.roundRect(px, 28, 36, 34, 6) : ctx.rect(px, 28, 36, 34);
+        ctx.fill();
+        ctx.fillStyle='#fff'; ctx.font='bold 18px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('▶', px+18, 45);
+        if (progress >= 1) clearInterval(anim);
+      }, 20);
+    }
+    showToast('🎭 正在模拟真人拖动轨迹...');
+    document.getElementById('r3b5').disabled = false;
+  } else if (n === 5) {
+    if (log) log.innerHTML += '<br>> 提交轨迹数据到服务器...<br>> 服务器响应：<b style="color:#3fb950">{"success":true,"msg":"验证通过"}</b>';
+    setTimeout(() => {
+      document.getElementById('r3-crack-result').classList.add('show');
+      markCracked('r3');
+    }, 600);
+  }
+};
+
+// R4 小活动数据（R3补充区调用）
+const r4ActData = [
+  { id:0, label:'访客A', data:'鼠标轨迹：自然曲线，速度有起伏；停顿2次；点击前有0.3秒微移；设备：普通PC', answer:'human', hint:'人类移动鼠标有自然的加速减速，还会在点击前微调位置' },
+  { id:1, label:'访客B', data:'鼠标轨迹：完美直线，匀速移动；无停顿；点击精确到1ms；设备：无型号（虚拟浏览器）', answer:'bot', hint:'完美直线+毫秒级精准点击是程序特征，人类做不到' },
+  { id:2, label:'访客C', data:'键盘输入：每次按键间隔完全一致(180ms)；无拼写错误；打字速度恒定；IP：数据中心', answer:'bot', hint:'真实人类打字节奏有变化，完全一致的间隔是脚本特征' },
+  { id:3, label:'访客D', data:'滚动速度：有加速度感；多次来回滑动；停顿后重新阅读；设备：iPhone 16；系统：iOS 18', answer:'human', hint:'滚动有惯性、来回翻页是真实阅读行为，机器人不会这样做' },
+  { id:4, label:'访客E', data:'在1秒内完成注册表单所有字段填写；每个字段耗时完全相同；无修改行为；来自代理IP', answer:'bot', hint:'人类填表需要思考时间，各字段速度不同；代理IP也是风险信号' },
+  { id:5, label:'访客F', data:'停留页面8分钟，鼠标几乎没动；偶尔滚动；随机点了一下后台通知；最后提交表单', answer:'human', hint:'长时间停留+偶发随机操作更像在思考的真实用户' },
+];
+
+window.r4CheckActivity = function() {
+  let correct = 0;
+  const result = document.getElementById('r4-activity-result');
+  let html = '<div style="font-size:14px;line-height:2">';
+  r4ActData.forEach(item => {
+    const sel = document.querySelector(`input[name="r4act-${item.id}"]:checked`);
+    const userAns = sel ? sel.value : null;
+    const ok = userAns === item.answer;
+    if (ok) correct++;
+    const icon = ok ? '✅' : '❌';
+    const ansLabel = item.answer === 'human' ? '👤 人类' : '🤖 机器人';
+    html += `<div style="margin-bottom:6px">${icon} <b>${item.label}</b>：正确答案是 <b style="color:${item.answer==='human'?'var(--green)':'var(--red)'}">${ansLabel}</b>　${ok?'':'<span style="color:var(--muted)">→ '+item.hint+'</span>'}</div>`;
+  });
+  html += `</div><div style="margin-top:10px;font-size:16px;font-weight:700;color:${correct>=5?'var(--green)':correct>=3?'var(--yellow)':'var(--red)'}">你答对了 ${correct}/6 题 ${correct>=5?'🏆 优秀！你的判断和AI很接近':correct>=3?'🙂 不错，继续加油':'😅 需要多练习'}</div>`;
+  result.innerHTML = html;
+  result.style.display = 'block';
+};
+
+window.r4ResetActivity = function() {
+  document.getElementById('r4-activity-result').style.display = 'none';
+  document.querySelectorAll('input[name^="r4act-"]').forEach(el => el.checked = false);
+  document.querySelectorAll('.r4-act-card .act-judge button').forEach(b => b.classList.remove('sel-human','sel-bot'));
+};
+
+// R3 黑客分析互动：点击揭晓
+const hackReasons = {
+  1: { title: 'AI持续学习，规则不断变化', detail: '今天研究出的绕过方法，明天模型一更新就失效了。没有一劳永逸的破解脚本。' },
+  2: { title: '破解难度极高，成本极大', detail: '需要同时模拟几十项行为特征（鼠标轨迹、键盘节奏、设备指纹等），缺一个就会被识别出来。' },
+  3: { title: '一旦被发现就被标记，试错成本极高', detail: '被标记后下次来会触发更严格的验证，甚至封禁IP——调试本身就在帮系统升级。' },
+  4: { title: '无法反复调整——越攻越强', detail: '每次尝试破解，都在给系统喂更多"攻击样本"，帮助它训练出更强的反制模型。' }
+};
+let revealedHackCount = 0;
+window.revealHackReason = function(card, num) {
+  if (card.dataset.revealed === '1') return;
+  card.dataset.revealed = '1';
+  const r = hackReasons[num];
+  card.innerHTML = `
+    <span style="color:var(--red);font-size:22px">${['❶','❷','❸','❹'][num-1]}</span>
+    <div style="flex:1"><b style="color:var(--text)">${r.title}</b><br><span style="color:var(--muted);font-size:13px">${r.detail}</span></div>
+  `;
+  card.style.borderColor = 'var(--red)';
+  card.style.background = 'rgba(220,38,38,.04)';
+  revealedHackCount++;
+  document.getElementById('r3-hack-counter').textContent = `已揭晓：${revealedHackCount} / 4`;
+  if (revealedHackCount >= 4) {
+    document.getElementById('r3-hack-conclusion').style.display = 'block';
+    document.getElementById('r3-hack-counter').style.color = 'var(--green)';
+    document.getElementById('r3-hack-counter').style.fontWeight = '700';
+  }
+};
+
+function initR4Activity() {
+  const container = document.getElementById('r4-activity-cards');
+  if (!container) return;
+  container.innerHTML = r4ActData.map(item => `
+    <div class="r4-act-card">
+      <div class="act-data"><b style="color:var(--text)">${item.label}</b><br>${item.data}</div>
+      <div class="act-judge">
+        <button onclick="r4ActSelect(${item.id},'human',this)" data-id="${item.id}" data-val="human">👤 人类</button>
+        <button onclick="r4ActSelect(${item.id},'bot',this)" data-id="${item.id}" data-val="bot">🤖 机器人</button>
+        <input type="radio" name="r4act-${item.id}" value="human" style="display:none">
+        <input type="radio" name="r4act-${item.id}" value="bot" style="display:none">
+      </div>
+    </div>`).join('');
+}
+window.r4ActSelect = function(id, val, btn) {
+  document.querySelectorAll(`button[data-id="${id}"]`).forEach(b => b.classList.remove('sel-human','sel-bot'));
+  btn.classList.add(val === 'human' ? 'sel-human' : 'sel-bot');
+  const radio = document.querySelector(`input[name="r4act-${id}"][value="${val}"]`);
+  if (radio) radio.checked = true;
+};
+
+// ============== CANVAS R2 DRAW ==============
+function drawR2() {
+  const canvas = document.getElementById('r2-canvas');
+  if (!canvas) return;
+  const chars = 'ABCDE23456789';
+  const code = Array.from({length:5},()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+  drawDist(canvas, code, true);
+}
+
+// ============== INIT ==============
+document.addEventListener('DOMContentLoaded', function() {
+  drawR1Captcha(); drawR2(); initR3Slider(); initR4Activity(); updateProgress();
+});
+
+</script>
+</body>
+</html>

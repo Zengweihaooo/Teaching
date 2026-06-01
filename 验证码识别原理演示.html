@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>验证码是怎么被"看懂"的？— 原理课</title>
+<style>
+  :root{
+    --green:#2e9e5b; --green-d:#1f7a44;
+    --blue:#2563eb; --purple:#7c3aed; --accent:#f4a02a;
+    --ink:#243b2f; --paper:#f4f8f5; --card:#ffffff;
+    --line:#dbe7df; --bad:#e25555; --good:#37c871; --muted:#6d8377;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:linear-gradient(180deg,#eef5f0,#f4f8f5);color:var(--ink);line-height:1.7;}
+  .wrap{max-width:1000px;margin:0 auto;padding:24px 18px 90px;}
+
+  header.hero{text-align:center;padding:24px 16px 6px;}
+  .badge{display:inline-block;background:var(--green);color:#fff;font-weight:800;letter-spacing:1px;padding:4px 14px;border-radius:20px;font-size:14px;}
+  h1{font-size:30px;margin:14px 0 6px;}
+  .sub{color:var(--muted);font-size:16px;margin:0;}
+
+  .round{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:24px 26px;margin:22px 0;box-shadow:0 6px 20px rgba(31,122,68,.06);position:relative;}
+  .round.locked-section{display:none;}
+  .rhead{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:4px;}
+  .rnum{font-size:34px;font-weight:900;color:var(--green);line-height:1;}
+  .ryear{font-size:15px;color:var(--accent);font-weight:700;}
+  .rtitle{font-size:21px;font-weight:800;}
+  .rstatus{margin-left:auto;font-size:13px;font-weight:700;padding:4px 12px;border-radius:20px;background:#eef3ef;color:var(--muted);}
+  .rstatus.active{background:#fff4dd;color:#a9711a;}
+  .rstatus.done{background:#e2f6ea;color:var(--green-d);}
+
+  .center{text-align:center;}
+  .tip{color:#8aa093;font-size:13px;margin-top:6px;}
+
+  .know{background:#eef4ff;border:1px solid #d4e2ff;border-radius:12px;padding:16px 18px;margin:14px 0;}
+  .know h4{margin:0 0 8px;color:var(--blue);font-size:16px;}
+  .know p{margin:6px 0;font-size:14.5px;color:#41566b;}
+  .know .hl{color:var(--green-d);font-weight:700;}
+  .know .hl2{color:var(--purple);font-weight:700;}
+  .scheme-tag{display:inline-block;font-size:12px;font-weight:800;padding:3px 10px;border-radius:6px;margin-right:8px;vertical-align:middle;}
+  .scheme-tag.s1{background:#e2f6ea;color:var(--green-d);}
+  .scheme-tag.s2{background:#ede9fe;color:var(--purple);}
+  .callout{margin-top:12px;padding:12px 14px;border-radius:10px;font-size:14px;line-height:1.75;}
+  .callout.warn{background:#fef2f2;border:1px solid #fecaca;color:#991b1b;}
+  .callout.win{background:#f0fdf4;border:1px solid #bbf7d0;color:#166534;}
+  .callout b{display:block;margin-bottom:4px;font-size:14.5px;}
+  .si.fatal .n{background:#dc2626;}
+  .si.core .n{background:var(--purple);}
+  .si .tag{display:inline-block;font-size:10px;font-weight:800;padding:1px 6px;border-radius:4px;margin-top:4px;}
+  .si.fatal .tag{background:#fee2e2;color:#b91c1c;}
+  .si.core .tag{background:#ede9fe;color:var(--purple);}
+  .guide{margin-top:10px;background:#fff7e8;border-left:3px solid var(--accent);border-radius:6px;padding:10px 14px;font-size:14px;color:#7a5a18;font-weight:600;}
+
+  .steps-intro{display:grid;gap:10px;margin-top:6px;}
+  .steps-intro.n4{grid-template-columns:repeat(4,1fr);}
+  .steps-intro.n5{grid-template-columns:repeat(5,1fr);}
+  .si{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:center;background:#fbfdfb;}
+  .si .n{width:28px;height:28px;border-radius:50%;background:var(--green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;margin:0 auto 6px;}
+  .si .t{font-weight:700;margin-bottom:2px;font-size:13.5px;}
+  .si .x{font-size:11.5px;color:var(--muted);}
+
+  .puzzle{background:#fafdfb;border:2px dashed var(--line);border-radius:14px;padding:18px;margin:16px 0;transition:.3s;}
+  .puzzle.solved{border-style:solid;border-color:var(--good);background:#effcf4;}
+  .puzzle h4{margin:0 0 4px;font-size:16px;}
+  .puzzle .ph{font-size:13px;color:var(--muted);margin-bottom:12px;}
+  .pool{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:14px;min-height:54px;border:1px dashed var(--line);border-radius:10px;padding:10px;background:#fff;}
+  .pool .lbl{width:100%;color:#9bb0a4;font-size:12px;}
+  .piece{cursor:grab;user-select:none;background:#fff;border:1.5px solid var(--line);border-radius:10px;padding:9px 14px;font-weight:700;display:flex;align-items:center;gap:7px;box-shadow:0 2px 6px rgba(0,0,0,.05);transition:transform .12s,box-shadow .12s;}
+  .piece:active{cursor:grabbing;}
+  .piece.drag{opacity:.4;}
+  .piece .e{font-size:17px;}
+  .slots{display:grid;gap:10px;}
+  .slots.n4{grid-template-columns:repeat(4,1fr);}
+  .slots.n5{grid-template-columns:repeat(5,1fr);}
+  .slot{border:2px dashed #c4d6cb;border-radius:12px;min-height:84px;padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;background:#fff;transition:.15s;position:relative;}
+  .slot .head{font-size:12px;color:#8aa093;font-weight:700;position:absolute;top:6px;left:8px;}
+  .slot.over{border-color:var(--blue);background:#eef4ff;}
+  .slot.correct{border-style:solid;border-color:var(--good);background:#effcf4;}
+  .slot.wrong{border-style:solid;border-color:#f3c0c0;background:#fdf1f1;}
+  .pstatus{margin-top:14px;text-align:center;font-weight:700;min-height:22px;font-size:14.5px;}
+  .pstatus.ok{color:var(--green-d);}
+  .pstatus.no{color:var(--bad);}
+
+  .btn{border:none;border-radius:30px;padding:11px 26px;font-weight:800;font-size:15px;cursor:pointer;transition:.15s;}
+  .btn-main{background:var(--green);color:#fff;box-shadow:0 6px 16px rgba(46,158,91,.3);}
+  .btn-main:hover{background:var(--green-d);}
+  .btn-main:disabled{background:#bcccc2;box-shadow:none;cursor:not-allowed;}
+  .btn-ghost{background:#fff;color:var(--green-d);border:1.5px solid var(--green);}
+  .btn-row{text-align:center;margin-top:10px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+  .demo.locked{opacity:.4;filter:grayscale(.5);pointer-events:none;}
+  .demo .lockmsg{text-align:center;color:var(--green-d);font-weight:700;font-size:14.5px;margin-top:8px;}
+  .stage-progress{display:flex;gap:8px;margin:14px 0;}
+  .pchip{flex:1;text-align:center;padding:8px 4px;border-radius:10px;font-size:12.5px;font-weight:700;background:#eef3ef;color:#9bb0a4;border:1px solid var(--line);transition:.2s;}
+  .pchip.active{background:var(--green);color:#fff;border-color:var(--green);transform:translateY(-2px);}
+  .pchip.done{background:#e2f6ea;color:var(--green-d);border-color:#bfe6cd;}
+  .panel{border:1px solid var(--line);border-radius:14px;padding:18px;background:#fbfdfb;min-height:250px;}
+  .panel h3{margin:0 0 4px;font-size:17px;}
+  .panel .desc{color:var(--muted);font-size:14px;margin:0 0 14px;min-height:20px;}
+  canvas{image-rendering:pixelated;background:#fff;border-radius:8px;border:1px solid var(--line);}
+  .row{display:flex;gap:18px;flex-wrap:wrap;align-items:center;justify-content:center;}
+  .stack{display:flex;flex-direction:column;align-items:center;gap:6px;}
+  .stack .cap{font-size:12.5px;color:var(--muted);font-weight:600;text-align:center;}
+
+  /* pixel grid */
+  .grid{display:grid;gap:2px;padding:6px;background:#222;border-radius:8px;}
+  .px{width:15px;height:15px;border-radius:2px;background:#3a3a3a;transition:background .08s,box-shadow .08s,transform .08s;}
+  .px.on{background:#f4f8f5;}
+  .px.scan{box-shadow:0 0 0 2px var(--accent);transform:scale(1.12);z-index:2;}
+  .px.match{background:var(--good);}
+  .px.miss{background:var(--bad);}
+
+  /* R1 左右对比区 */
+  .cmp{display:flex;align-items:center;justify-content:center;gap:18px;flex-wrap:wrap;width:100%;margin-bottom:10px;}
+  .cmp .vs{font-size:24px;color:var(--muted);font-weight:800;}
+  .cmpscore{font-size:15px;color:var(--ink);font-weight:700;background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px 14px;}
+  .cmpscore b{color:var(--green-d);font-size:20px;font-variant-numeric:tabular-nums;}
+  .legend{display:flex;gap:14px;justify-content:center;font-size:12px;color:var(--muted);margin-bottom:10px;flex-wrap:wrap;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  .dot.g{background:var(--good);} .dot.r{background:var(--bad);} .dot.d{background:#3a3a3a;}
+
+  /* candidate bars */
+  .bars{display:flex;flex-direction:column;gap:4px;width:300px;max-width:100%;}
+  .bar{display:flex;align-items:center;gap:8px;font-size:13px;}
+  .bar .lab{width:20px;text-align:center;font-weight:800;font-family:monospace;}
+  .bar .track{flex:1;height:14px;background:#e9efeb;border-radius:7px;overflow:hidden;}
+  .bar .fill{height:100%;width:0;background:#9fc5ad;border-radius:7px;transition:width .3s ease;}
+  .bar .val{width:42px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);}
+  .bar.win .fill{background:var(--green);}
+  .bar.win .lab{color:var(--green-d);}
+
+  /* 特征标签 */
+  .featchar{width:46px;height:56px;border:2px solid var(--line);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:800;font-family:monospace;background:#fff;transition:.25s;}
+  .featchar.analyzing{border-color:var(--accent);box-shadow:0 0 12px rgba(244,160,42,.4);}
+  .featchar.done{border-color:var(--good);background:#effcf4;}
+  .ftags{display:flex;flex-wrap:wrap;gap:5px;flex:1;min-width:160px;}
+  .ftag{font-size:12px;padding:3px 9px;border-radius:14px;font-weight:600;opacity:0;transform:translateY(4px);transition:.25s;}
+  .ftag.show{opacity:1;transform:none;}
+  .ftag.shape{background:#ede9fe;color:var(--purple);}
+  .ftag.stroke{background:#dbeafe;color:var(--blue);}
+  .ftag.ratio{background:#fff0db;color:#b06a12;}
+  .featrow{display:flex;gap:12px;align-items:center;width:100%;max-width:560px;margin:0 auto 6px;padding:8px 10px;border-radius:10px;background:#fff;border:1px solid var(--line);}
+
+  /* 特征库比对候选 */
+  .libchar{width:52px;border:2px solid var(--line);border-radius:8px;text-align:center;padding:6px 2px;font-family:monospace;font-weight:800;font-size:18px;background:#fff;transition:.25s;}
+  .libchar .sc{display:block;font-size:11px;color:var(--muted);font-weight:600;}
+  .libchar.best{border-color:var(--good);background:#effcf4;box-shadow:0 0 10px rgba(55,200,113,.3);transform:scale(1.06);}
+  .librow{display:flex;gap:12px;align-items:center;width:100%;max-width:560px;margin:0 auto 8px;flex-wrap:wrap;}
+  .librow .lc{font-weight:700;font-size:14px;min-width:64px;}
+
+  .result-strip{display:flex;gap:10px;justify-content:center;margin-top:10px;}
+  .slotd{width:54px;height:62px;border:2px dashed #c4d6cb;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;font-family:"Courier New",monospace;color:#37423c;background:#fff;transition:.2s;}
+  .slotd.filled{border-style:solid;border-color:var(--green);background:#effcf4;animation:pop .3s;}
+  @keyframes pop{0%{transform:scale(.6)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+
+  .success-banner{margin-top:16px;text-align:center;font-size:19px;font-weight:800;color:var(--green-d);opacity:0;transform:translateY(8px);transition:.4s;}
+  .success-banner.show{opacity:1;transform:none;}
+
+  .gate{background:linear-gradient(135deg,#fff,#f0f7f2);border:2px solid var(--line);border-radius:18px;padding:26px;margin:22px 0;text-align:center;transition:.3s;}
+  .gate.locked .gatebody{opacity:.45;pointer-events:none;}
+  .gate h3{margin:0 0 6px;font-size:20px;}
+  .gate p{color:var(--muted);margin:4px 0 16px;font-size:14.5px;}
+  .gate input{font-size:24px;letter-spacing:10px;text-align:center;width:180px;padding:10px;border:2px solid var(--line);border-radius:12px;font-family:monospace;outline:none;}
+  .gate input:focus{border-color:var(--green);}
+  .gate .gmsg{margin-top:12px;font-weight:700;min-height:22px;font-size:14px;}
+  .gate .gmsg.no{color:var(--bad);}
+  .gate .gmsg.ok{color:var(--green-d);}
+  .lock-icon{font-size:34px;}
+
+  footer{text-align:center;color:#9bb0a4;font-size:13px;margin-top:30px;}
+
+  @media(max-width:760px){
+    .steps-intro.n4,.steps-intro.n5{grid-template-columns:repeat(2,1fr);}
+    .slots.n4,.slots.n5{grid-template-columns:repeat(2,1fr);}
+    .stage-progress{flex-wrap:wrap;}
+    .pchip{flex:1 1 30%;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <span class="badge">验证码攻防 · 原理课</span>
+    <h1>验证码是怎么被电脑"看懂"的？</h1>
+    <p class="sub">方案一【古典 OCR · 模板像素识别】→ 方案二【现代 OCR · 特征提取与比对】</p>
+  </header>
+
+  <!-- ============== ROUND 1 · 纯数字验证码 ============== -->
+  <section class="round" id="r1">
+    <div class="rhead">
+      <span class="rnum">ROUND 1</span>
+      <span class="ryear">最早期</span>
+      <span class="rtitle">纯数字验证码 · 方案一</span>
+      <span class="rstatus" id="r1-status">🔒 等待破解</span>
+    </div>
+
+    <div class="center">
+      <canvas id="r1-preview" width="320" height="90"></canvas>
+      <div class="tip">▲ 纯数字、白底、无背景干扰 —— 电脑要怎么自动认出这几个数字？</div>
+    </div>
+
+    <div class="know">
+      <h4><span class="scheme-tag s1">方案一</span>模板像素识别 · 【古典 OCR】</h4>
+      <p>这是早期计算机"认字"最原始、最正宗的方式。它建立在一个<b>乌托邦式假设</b>上：
+        所有字都规规矩矩、字体一模一样——就像印刷体，没有变形。</p>
+      <p><b>工作流水线</b>（请按顺序排列碎片）：</p>
+      <div class="steps-intro n5">
+        <div class="si"><div class="n">1</div><div class="t">📷 取图</div><div class="x">获取验证码图像</div></div>
+        <div class="si"><div class="n">2</div><div class="t">⚙️ 图像预处理</div><div class="x">灰度化·二值化·去噪</div></div>
+        <div class="si fatal"><div class="n">3</div><div class="t">✂️ 字符切割</div><div class="x">切成单个字符</div><span class="tag">致命环节</span></div>
+        <div class="si core"><div class="n">4</div><div class="t">🔍 像素级比对</div><div class="x">和字库模板"透贴"</div><span class="tag">核心分类</span></div>
+        <div class="si"><div class="n">5</div><div class="t">🧩 拼接提交</div><div class="x">组装识别结果</div></div>
+      </div>
+      <div class="callout warn">
+        <b>⚠️ 致命弱点</b>
+        极度依赖「字符切割」的准确性和字体的「无形变」。一旦验证码设计者让字符<b>粘连在一起（切不开）</b>，
+        或者<b>扭曲了字符（像素对不上）</b>，这套古典方法就彻底抓瞎。
+      </div>
+      <div class="guide">💡 先把下面 5 块碎片按正确流水线排好，拼对后解锁破解演示。</div>
+    </div>
+
+    <div class="puzzle" id="r1-puzzle">
+      <h4>🧩 第一步：排列【古典 OCR】工作流水线</h4>
+      <p class="ph">把 5 块碎片拖进对应的步骤格子里。</p>
+      <div class="pool" data-zone="pool"><div class="lbl">碎片池（拖我 ↓）</div></div>
+      <div class="slots n5">
+        <div class="slot" data-slot="0"><span class="head">第1步</span></div>
+        <div class="slot" data-slot="1"><span class="head">第2步</span></div>
+        <div class="slot" data-slot="2"><span class="head">第3步</span></div>
+        <div class="slot" data-slot="3"><span class="head">第4步</span></div>
+        <div class="slot" data-slot="4"><span class="head">第5步</span></div>
+      </div>
+      <div class="pstatus">把碎片拖进格子吧～</div>
+    </div>
+
+    <div class="demo locked" id="r1-demo">
+      <div class="stage-progress">
+        <div class="pchip" data-p="0">① 取图</div>
+        <div class="pchip" data-p="1">② 图像预处理</div>
+        <div class="pchip" data-p="2">③ 字符切割</div>
+        <div class="pchip" data-p="3">④ 像素级比对</div>
+        <div class="pchip" data-p="4">⑤ 拼接提交</div>
+      </div>
+      <div class="panel">
+        <h3 class="stitle">准备就绪</h3>
+        <p class="desc">流程排对后即可解锁。演示古典 OCR 如何把规规矩矩的纯数字验证码"透贴"认出来。</p>
+        <div class="sbody row"></div>
+      </div>
+      <div class="success-banner">✅ 验证通过！电脑成功识别出验证码</div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn btn-main start">▶ 开始演示</button>
+        <button class="btn btn-ghost replay" style="display:none;">↻ 再看一遍</button>
+      </div>
+      <div class="lockmsg">🔑 先完成上面的拼图，才能进入破解演示</div>
+    </div>
+  </section>
+
+  <!-- ============== 密码关卡 ============== -->
+  <section class="gate locked" id="gate">
+    <div class="lock-icon">🔐</div>
+    <h3>通关密码 · 进入下一关</h3>
+    <p id="gate-tip">完成上面的"纯数字验证码"破解演示后，输入老师给出的密码，即可进入「图形验证码」。</p>
+    <div class="gatebody">
+      <input id="gate-input" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+      <div class="btn-row" style="margin-top:14px;">
+        <button class="btn btn-main" id="gate-btn">🔓 解锁下一关</button>
+      </div>
+      <div class="gmsg" id="gate-msg"></div>
+    </div>
+  </section>
+
+  <!-- ============== ROUND 2 · 图形验证码 ============== -->
+  <section class="round locked-section" id="r2">
+    <div class="rhead">
+      <span class="rnum">ROUND 2</span>
+      <span class="ryear">进阶</span>
+      <span class="rtitle">图形验证码 · 方案二</span>
+      <span class="rstatus" id="r2-status">🔒 等待破解</span>
+    </div>
+
+    <div class="center">
+      <canvas id="r2-preview" width="340" height="100"></canvas>
+      <div class="tip">▲ 字符粘连、扭曲变形 —— 古典 OCR 的「透贴」彻底失灵，必须换【现代 OCR】</div>
+    </div>
+
+    <div class="know">
+      <h4><span class="scheme-tag s2">方案二</span>特征提取与比对 · 【现代 OCR / 视觉技术前身】</h4>
+      <p>当验证码让古典 OCR 瘫痪后，黑客和学者引入了来自<b>计算机视觉（CV）</b>的技术——
+        标志着文字识别从<b>"死板的像素核对"</b>走向<b>"灵活的模式识别"</b>。</p>
+      <p><b>工作流水线</b>（本课演示精简为 5 步；其中「字符切割」在演示里并入预处理，标注为弱依赖）：</p>
+      <div class="steps-intro n5">
+        <div class="si"><div class="n">1</div><div class="t">📷 取图</div><div class="x">获取验证码图像</div></div>
+        <div class="si"><div class="n">2</div><div class="t">⚙️ 图像预处理</div><div class="x">灰度·二值·去噪（含弱切割）</div></div>
+        <div class="si core"><div class="n">3</div><div class="t">🔬 特征提取</div><div class="x">HOG·形状上下文等</div><span class="tag">核心革命</span></div>
+        <div class="si core"><div class="n">4</div><div class="t">🗂️ 特征库分类</div><div class="x">SVM/KNN 多维匹配</div><span class="tag">核心分类</span></div>
+        <div class="si"><div class="n">5</div><div class="t">🧩 拼接提交</div><div class="x">组装识别结果</div></div>
+      </div>
+      <div class="callout win">
+        <b>✨ 降维打击</b>
+        不再纠结「这个像素点是不是黑的」，而是理解「这是一个锐角，那是一个半圆」。
+        提取的是<b>A 之所以是 A 的拓扑结构</b>——无论验证码怎么扭曲、旋转，只要字母的「骨架」还在，就能识别出来。
+      </div>
+      <div class="guide">💡 先排好 5 步流水线，重点看「特征提取」和「特征库分类」两步。</div>
+    </div>
+
+    <div class="puzzle" id="r2-puzzle">
+      <h4>🧩 第一步：排列【现代 OCR】工作流水线</h4>
+      <p class="ph">把 5 块碎片拖进对应的步骤格子里。</p>
+      <div class="pool" data-zone="pool"><div class="lbl">碎片池（拖我 ↓）</div></div>
+      <div class="slots n5">
+        <div class="slot" data-slot="0"><span class="head">第1步</span></div>
+        <div class="slot" data-slot="1"><span class="head">第2步</span></div>
+        <div class="slot" data-slot="2"><span class="head">第3步</span></div>
+        <div class="slot" data-slot="3"><span class="head">第4步</span></div>
+        <div class="slot" data-slot="4"><span class="head">第5步</span></div>
+      </div>
+      <div class="pstatus">把碎片拖进格子吧～</div>
+    </div>
+
+    <div class="demo locked" id="r2-demo">
+      <div class="stage-progress">
+        <div class="pchip" data-p="0">① 取图</div>
+        <div class="pchip" data-p="1">② 图像预处理</div>
+        <div class="pchip" data-p="2">③ 特征提取</div>
+        <div class="pchip" data-p="3">④ 特征库分类</div>
+        <div class="pchip" data-p="4">⑤ 拼接提交</div>
+      </div>
+      <div class="panel">
+        <h3 class="stitle">准备就绪</h3>
+        <p class="desc">流程排对后即可解锁。重点看现代 OCR 如何丢弃像素矩阵、提取高维特征并在特征库里分类。</p>
+        <div class="sbody row"></div>
+      </div>
+      <div class="success-banner">✅ 验证通过！图形验证码被现代 OCR 特征分类攻破</div>
+      <div class="btn-row" style="margin-top:18px;">
+        <button class="btn btn-main start">▶ 开始演示</button>
+        <button class="btn btn-ghost replay" style="display:none;">↻ 再看一遍</button>
+      </div>
+      <div class="lockmsg">🔑 先完成上面的拼图，才能进入破解演示</div>
+    </div>
+  </section>
+
+  <footer>🎓 方案一【古典 OCR · 像素透贴】→ 方案二【现代 OCR · 特征分类】&nbsp;|&nbsp; 再后来还有行为验证、滑块、点选等更难的形式</footer>
+</div>
+
+<script>
+/* ============================================================
+   5×7 点阵字库
+   ============================================================ */
+const FONT = {
+  '0':["01110","10001","10011","10101","11001","10001","01110"],
+  '1':["00100","01100","00100","00100","00100","00100","01110"],
+  '2':["01110","10001","00001","00010","00100","01000","11111"],
+  '3':["11111","00010","00100","00010","00001","10001","01110"],
+  '4':["00010","00110","01010","10010","11111","00010","00010"],
+  '5':["11111","10000","11110","00001","00001","10001","01110"],
+  '6':["00110","01000","10000","11110","10001","10001","01110"],
+  '7':["11111","00001","00010","00100","01000","01000","01000"],
+  '8':["01110","10001","10001","01110","10001","10001","01110"],
+  '9':["01110","10001","10001","01111","00001","00010","01100"],
+  'A':["01110","10001","10001","11111","10001","10001","10001"],
+  'B':["11110","10001","10001","11110","10001","10001","11110"],
+  'E':["11111","10000","10000","11110","10000","10000","11111"],
+  'H':["10001","10001","10001","11111","10001","10001","10001"],
+  'K':["10001","10010","10100","11000","10100","10010","10001"],
+  'M':["10001","11011","10101","10101","10001","10001","10001"],
+  'N':["10001","11001","10101","10011","10001","10001","10001"],
+  'T':["11111","00100","00100","00100","00100","00100","00100"]
+};
+const COLS=5, ROWS=7, CELLS=COLS*ROWS;
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+function bits(ch){const o=[];FONT[ch].forEach(r=>r.split('').forEach(c=>o.push(c==='1'?1:0)));return o;}
+function rnd(a,b){return Math.floor(a+Math.random()*(b-a));}
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+const R1_CHARSET = ['0','1','2','3','4','5','6','7','8','9'];
+const R2_CHARSET = ['2','3','4','5','6','7','8','A','B','E','H','K','M','N'];
+const R1_CODE = Array.from({length:4},()=>R1_CHARSET[rnd(0,R1_CHARSET.length)]);
+const R2_CODE = Array.from({length:4},()=>R2_CHARSET[rnd(0,R2_CHARSET.length)]);
+
+const PIECES_R1 = [
+  {id:'capture', e:'📷', t:'取图',        correct:0},
+  {id:'pre',     e:'⚙️', t:'图像预处理',  correct:1},
+  {id:'match',   e:'🔍', t:'模板像素识别',correct:2},
+  {id:'submit',  e:'🧩', t:'拼接提交',    correct:3},
+];
+const PIECES_R2 = [
+  {id:'capture', e:'📷', t:'取图',        correct:0},
+  {id:'pre',     e:'⚙️', t:'图像预处理',  correct:1},
+  {id:'feat',    e:'🔬', t:'特征提取',    correct:2},
+  {id:'lib',     e:'🗂️', t:'特征库比对',  correct:3},
+  {id:'submit',  e:'🧩', t:'拼接提交',    correct:4},
+];
+
+/* 字符形状特征库 */
+const FEATS = {
+  '2':[{l:'顶部弧线',t:'shape'},{l:'底部横线',t:'stroke'},{l:'开口朝左',t:'shape'},{l:'高宽比4:3',t:'ratio'}],
+  '3':[{l:'双层右弧',t:'shape'},{l:'右侧开口',t:'shape'},{l:'中部收窄',t:'stroke'},{l:'高宽比4:3',t:'ratio'}],
+  '4':[{l:'斜线+竖线',t:'stroke'},{l:'1个交叉点',t:'shape'},{l:'上方开口',t:'shape'},{l:'高宽比3:2',t:'ratio'}],
+  '5':[{l:'顶部横线',t:'stroke'},{l:'底部弧线',t:'shape'},{l:'左上直角',t:'shape'},{l:'高宽比4:3',t:'ratio'}],
+  '6':[{l:'左侧长弧',t:'shape'},{l:'下闭合圈',t:'shape'},{l:'弯曲弧度大',t:'stroke'},{l:'高宽比4:3',t:'ratio'}],
+  '7':[{l:'顶部横线',t:'stroke'},{l:'1条长斜线',t:'stroke'},{l:'右上锐角',t:'shape'},{l:'高宽比3:2',t:'ratio'}],
+  '8':[{l:'双闭合圈',t:'shape'},{l:'上下对称',t:'shape'},{l:'中部交点',t:'stroke'},{l:'高宽比4:3',t:'ratio'}],
+  'A':[{l:'两条斜线',t:'stroke'},{l:'顶部尖角',t:'shape'},{l:'中部横线',t:'stroke'},{l:'高宽比1:1',t:'ratio'}],
+  'B':[{l:'左侧竖线',t:'stroke'},{l:'两个闭合圈',t:'shape'},{l:'右侧双弧',t:'shape'},{l:'高宽比3:2',t:'ratio'}],
+  'E':[{l:'三条横线',t:'stroke'},{l:'一条竖线',t:'stroke'},{l:'右侧全开',t:'shape'},{l:'高宽比3:2',t:'ratio'}],
+  'H':[{l:'两条竖线',t:'stroke'},{l:'中部横线',t:'stroke'},{l:'左右对称',t:'shape'},{l:'高宽比3:2',t:'ratio'}],
+  'K':[{l:'一条竖线',t:'stroke'},{l:'两条斜线',t:'stroke'},{l:'右侧交叉',t:'shape'},{l:'高宽比3:2',t:'ratio'}],
+  'M':[{l:'两条竖线',t:'stroke'},{l:'中部双斜',t:'stroke'},{l:'顶部双峰',t:'shape'},{l:'高宽比1:1',t:'ratio'}],
+  'N':[{l:'两条竖线',t:'stroke'},{l:'1条长斜线',t:'stroke'},{l:'左下右上',t:'shape'},{l:'高宽比1:1',t:'ratio'}]
+};
+function getFeats(ch){return FEATS[ch]||[{l:'线条走向',t:'stroke'},{l:'弯曲弧度',t:'shape'},{l:'拐点数量',t:'shape'},{l:'高宽比',t:'ratio'}];}
+
+/* ============================================================
+   预览 canvas
+   ============================================================ */
+function drawCleanPreview(canvas, code){
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  ctx.fillStyle='#2b2f3a';ctx.font='bold 46px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  code.forEach((ch,i)=>{ctx.save();ctx.translate(W/2-(code.length-1)*40/2+i*40,H/2);ctx.rotate((Math.random()-.5)*0.12);ctx.fillText(ch,0,0);ctx.restore();});
+}
+function drawNoisyCaptcha(canvas, code){
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  const g=ctx.createLinearGradient(0,0,W,H);
+  g.addColorStop(0,'#fbd0d8');g.addColorStop(.5,'#cfe6fb');g.addColorStop(1,'#d6f1c9');
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  const colors=['#c0392b','#2980b9','#27ae60','#8e44ad','#d35400'];
+  ctx.font='bold 44px monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  code.forEach((ch,i)=>{ctx.save();ctx.translate(W/2-(code.length-1)*64/2+i*64,H/2+(Math.random()-.5)*12);ctx.rotate((Math.random()-.5)*0.5);ctx.fillStyle=colors[i%colors.length];ctx.fillText(ch,0,0);ctx.restore();});
+  for(let i=0;i<6;i++){ctx.strokeStyle=`rgba(${rnd(0,160)},${rnd(0,160)},${rnd(0,160)},.55)`;ctx.lineWidth=1.6;ctx.beginPath();ctx.moveTo(rnd(0,W),rnd(0,H));ctx.bezierCurveTo(rnd(0,W),rnd(0,H),rnd(0,W),rnd(0,H),rnd(0,W),rnd(0,H));ctx.stroke();}
+  for(let i=0;i<220;i++){ctx.fillStyle=`rgba(${rnd(0,180)},${rnd(0,180)},${rnd(0,180)},.6)`;ctx.fillRect(rnd(0,W),rnd(0,H),1.8,1.8);}
+}
+
+/* ============================================================
+   拖拽拼图（支持任意块数）
+   ============================================================ */
+let dragged=null;
+function makePiece(p){
+  const el=document.createElement('div');
+  el.className='piece';el.draggable=true;el.dataset.id=p.id;el.dataset.correct=p.correct;
+  el.innerHTML=`<span class="e">${p.e}</span>${p.t}`;
+  el.addEventListener('dragstart',()=>{dragged=el;el.classList.add('drag');});
+  el.addEventListener('dragend',()=>{el.classList.remove('drag');dragged=null;});
+  return el;
+}
+function setupPuzzle(round, pieces, onSolved){
+  const wrap=document.getElementById(round+'-puzzle');
+  const pool=wrap.querySelector('.pool');
+  const slots=[...wrap.querySelectorAll('.slot')];
+  const status=wrap.querySelector('.pstatus');
+  const need=slots.length;
+
+  pool.querySelectorAll('.piece').forEach(p=>p.remove());
+  shuffle([...pieces]).forEach(p=>pool.appendChild(makePiece(p)));
+
+  function attach(zone){
+    zone.addEventListener('dragover',e=>{e.preventDefault();zone.classList.add('over');});
+    zone.addEventListener('dragleave',()=>zone.classList.remove('over'));
+    zone.addEventListener('drop',e=>{
+      e.preventDefault();zone.classList.remove('over');
+      if(!dragged)return;
+      if(zone.classList.contains('slot')){const ex=zone.querySelector('.piece');if(ex&&ex!==dragged)pool.appendChild(ex);}
+      zone.appendChild(dragged);check();
+    });
+  }
+  attach(pool);slots.forEach(attach);
+
+  function check(){
+    let filled=0,allCorrect=true;
+    slots.forEach((s,i)=>{
+      const p=s.querySelector('.piece');s.classList.remove('correct','wrong');
+      if(p){filled++;if(+p.dataset.correct===i)s.classList.add('correct');else{s.classList.add('wrong');allCorrect=false;}}
+      else allCorrect=false;
+    });
+    if(filled<need){status.textContent=`还差 ${need-filled} 块～`;status.className='pstatus';}
+    else if(allCorrect){status.textContent='🎉 顺序正确！下方"破解演示"已解锁！';status.className='pstatus ok';wrap.classList.add('solved');onSolved();}
+    else{status.textContent='顺序还不对，调整一下红色格子 🔁';status.className='pstatus no';}
+  }
+}
+
+/* ============================================================
+   像素网格 & 小工具
+   ============================================================ */
+function makeGrid(bitsArr){
+  const g=document.createElement('div');g.className='grid';
+  g.style.gridTemplateColumns=`repeat(${COLS},15px)`;
+  for(let i=0;i<CELLS;i++){const c=document.createElement('div');c.className='px'+(bitsArr[i]?' on':'');g.appendChild(c);}
+  return g;
+}
+function capEl(t){const d=document.createElement('div');d.className='cap';d.textContent=t;return d;}
+function stackEl(){const d=document.createElement('div');d.className='stack';return d;}
+
+/* 干净二值字符 / 分割 */
+function drawCleanBinary(canvas, code){
+  const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  const px=7,dw=COLS*px,gap=18;
+  const totalW=code.length*dw+(code.length-1)*gap;
+  const x0=(W-totalW)/2,y0=(H-ROWS*px)/2;
+  ctx.fillStyle='#111';
+  code.forEach((ch,di)=>{const b=bits(ch);for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++)if(b[r*COLS+c])ctx.fillRect(x0+di*(dw+gap)+c*px,y0+r*px,px,px);});
+  return {x0,y0,px,dw,gap};
+}
+async function drawSegments(canvas, code){
+  const {x0,y0,px,dw,gap}=drawCleanBinary(canvas,code);
+  const ctx=canvas.getContext('2d');
+  for(let di=0;di<code.length;di++){ctx.strokeStyle='#2e9e5b';ctx.lineWidth=2;ctx.setLineDash([4,3]);ctx.strokeRect(x0+di*(dw+gap)-3,y0-4,dw+6,ROWS*px+8);await sleep(260);}
+  ctx.setLineDash([]);
+}
+
+/* ============================================================
+   共用阶段：取图 / 预处理 / 拼接提交
+   D = {body, desc}
+   ============================================================ */
+async function phaseCapture(D, code, noisy){
+  D.desc.textContent=noisy
+    ? '程序像截屏一样抓取验证码图片 —— 此时它带着彩色背景、扭曲、噪点和干扰线。'
+    : '程序像截屏一样抓取验证码图片 —— 纯数字、白底，非常干净。';
+  D.body.style.flexDirection='row';D.body.innerHTML='';
+  const st=stackEl();
+  const cv=document.createElement('canvas');cv.width=noisy?340:320;cv.height=100;cv.style.width=cv.width+'px';
+  st.appendChild(cv);st.appendChild(capEl('抓取到的原始图片'));D.body.appendChild(st);
+  cv.style.opacity=0;cv.style.transition='opacity .7s';
+  if(noisy)drawNoisyCaptcha(cv,code);else drawCleanPreview(cv,code);
+  await sleep(60);cv.style.opacity=1;await sleep(1300);
+}
+async function phasePre(D, code, noisy){
+  D.body.style.flexDirection='row';D.body.innerHTML='';
+  const st=stackEl();
+  const cv=document.createElement('canvas');cv.width=noisy?340:320;cv.height=100;cv.style.width=cv.width+'px';
+  const cap=capEl('');st.appendChild(cv);st.appendChild(cap);D.body.appendChild(st);
+  const ctx=cv.getContext('2d');
+  if(noisy)drawNoisyCaptcha(cv,code);else drawCleanPreview(cv,code);
+
+  D.desc.textContent=noisy?'第①步 灰度化：丢掉所有颜色，只保留明暗。':'第①步 灰度化：纯数字本就接近黑白，很轻松。';
+  cap.textContent='灰度化';await sleep(800);
+  let img=ctx.getImageData(0,0,cv.width,cv.height),d=img.data;
+  for(let i=0;i<d.length;i+=4){const g=0.3*d[i]+0.59*d[i+1]+0.11*d[i+2];d[i]=d[i+1]=d[i+2]=g;}
+  ctx.putImageData(img,0,0);await sleep(1000);
+
+  D.desc.textContent='第②步 二值化：定个阈值，比它暗算"黑"，比它亮算"白"。只剩黑白两色。';
+  cap.textContent='二值化（非黑即白）';await sleep(800);
+  img=ctx.getImageData(0,0,cv.width,cv.height);d=img.data;
+  const thr=noisy?165:150;
+  for(let i=0;i<d.length;i+=4){const v=d[i]<thr?0:255;d[i]=d[i+1]=d[i+2]=v;}
+  ctx.putImageData(img,0,0);await sleep(1100);
+
+  D.desc.textContent=noisy?'第③步 去噪 + 去干扰线：清除零散黑点、擦掉穿过字符的干扰线。':'第③步 去噪：清掉零散小黑点。';
+  cap.textContent=noisy?'去噪 + 去干扰线':'去噪后';await sleep(800);
+  drawCleanBinary(cv,code);await sleep(1000);
+
+  D.desc.textContent=noisy?'第④步 校正 + 分割：把扭曲的字符摆正，再切成独立小块。':'第④步 分割：切成独立数字小块。';
+  cap.textContent='校正并分割';await sleep(700);
+  await drawSegments(cv,code);await sleep(1200);
+}
+async function phaseSubmit(D, code){
+  D.desc.textContent='把识别结果按顺序拼起来，作为答案自动提交。';
+  D.body.style.flexDirection='column';D.body.innerHTML='';
+  const strip=document.createElement('div');strip.className='result-strip';D.body.appendChild(strip);
+  for(let i=0;i<code.length;i++){const s=document.createElement('div');s.className='slotd';strip.appendChild(s);await sleep(280);s.textContent=code[i];s.classList.add('filled');}
+  const txt=capEl('');txt.style.marginTop='12px';txt.style.fontSize='16px';
+  txt.innerHTML='识别结果：<b style="font-size:22px;color:#1f7a44">'+code.join('')+'</b> ，正在提交…';
+  D.body.appendChild(txt);await sleep(900);
+}
+
+/* ============================================================
+   通用演示外壳
+   ============================================================ */
+function demoShell(round){
+  const root=document.getElementById(round+'-demo');
+  return {
+    root,
+    chips:[...root.querySelectorAll('.pchip')],
+    stitle:root.querySelector('.stitle'),
+    desc:root.querySelector('.desc'),
+    body:root.querySelector('.sbody'),
+    banner:root.querySelector('.success-banner'),
+    startBtn:root.querySelector('.start'),
+    replayBtn:root.querySelector('.replay'),
+    lockmsg:root.querySelector('.lockmsg'),
+  };
+}
+function bindRun(S, phasesFn){
+  let running=false;
+  function setPhase(i){S.chips.forEach((c,k)=>{c.classList.toggle('active',k===i);if(k<i)c.classList.add('done');});}
+  function reset(){S.chips.forEach(c=>c.classList.remove('active','done'));S.banner.classList.remove('show');}
+  async function run(){
+    if(running)return;running=true;
+    S.startBtn.disabled=true;S.startBtn.style.display='none';S.replayBtn.style.display='none';
+    reset();
+    await phasesFn(setPhase);
+    S.chips.forEach(c=>{c.classList.add('done');c.classList.remove('active');});
+    S.banner.classList.add('show');
+    running=false;S.replayBtn.style.display='inline-block';
+    const st=document.getElementById(S.root.id.replace('-demo','')+'-status');
+    if(st){st.textContent='✅ 破解成功';st.className='rstatus done';}
+    if(S.onDone)S.onDone();
+  }
+  S.startBtn.addEventListener('click',run);
+  S.replayBtn.addEventListener('click',()=>{S.body.innerHTML='';run();});
+  return {
+    unlock(){S.root.classList.remove('locked');S.startBtn.disabled=false;S.lockmsg.style.display='none';}
+  };
+}
+
+/* ============================================================
+   ROUND 1：模板像素匹配（完美左右对比）
+   ============================================================ */
+function createR1Demo(code, library, onDone){
+  const S=demoShell('r1');S.onDone=onDone;
+  const D={body:S.body,desc:S.desc};
+
+  async function pMatch(){
+    S.stitle.textContent='③ 模板像素识别（核心！左右对比）';
+    S.desc.textContent='左边固定显示待识别字符；右边逐个换上 0~9 模板做逐像素比对，重合率最高的就是答案，最后会定格在匹配的数字上并保持绿色。';
+    S.body.style.flexDirection='column';S.body.innerHTML='';
+
+    const cmp=document.createElement('div');cmp.className='cmp';
+    const left=stackEl();const lg=makeGrid([]);left.appendChild(lg);const lcap=capEl('待识别字符');left.appendChild(lcap);
+    const vs=document.createElement('div');vs.className='vs';vs.textContent='⟷';
+    const right=stackEl();const rg=makeGrid([]);right.appendChild(rg);const rcap=capEl('对照模板');right.appendChild(rcap);
+    const score=document.createElement('div');score.className='cmpscore';score.innerHTML='重合度 <b>0%</b>';
+    cmp.append(left,vs,right,score);
+
+    const legend=document.createElement('div');legend.className='legend';
+    legend.innerHTML='<span><i class="dot g"></i>与左边重合的像素</span><span><i class="dot r"></i>对不上的像素</span><span><i class="dot d"></i>空白</span>';
+
+    const bars=document.createElement('div');bars.className='bars';
+    const barEls={};
+    library.forEach(n=>{const b=document.createElement('div');b.className='bar';b.innerHTML=`<span class="lab">${n}</span><span class="track"><span class="fill"></span></span><span class="val">0%</span>`;bars.appendChild(b);barEls[n]=b;});
+    const barsWrap=stackEl();const bcap=capEl('各模板重合度打分');barsWrap.append(bcap,bars);
+
+    const strip=document.createElement('div');strip.className='result-strip';
+    code.forEach(()=>{const s=document.createElement('div');s.className='slotd';strip.appendChild(s);});
+
+    S.body.append(cmp,legend,barsWrap,strip);
+    const lcells=[...lg.children],rcells=[...rg.children];
+
+    for(let di=0;di<code.length;di++){
+      const ch=code[di];const tBits=bits(ch);
+      // 左边固定显示待识别字符，全程不变色
+      lcells.forEach((c,i)=>c.className='px'+(tBits[i]?' on':''));
+      lcap.textContent=`待识别字符（第 ${di+1} 个）`;
+      Object.values(barEls).forEach(b=>{b.classList.remove('win');b.querySelector('.fill').style.width='0';b.querySelector('.val').textContent='0%';});
+      let best={n:library[0],score:-1};
+
+      for(const n of library){
+        const cB=bits(n);
+        // 右边换上当前模板（仅右边做扫描、上色对比）
+        rcells.forEach((c,i)=>c.className='px'+(cB[i]?' on':''));
+        rcap.textContent='对照模板：'+n;
+        let match=0;
+        for(let col=0;col<COLS;col++){
+          for(let r=0;r<ROWS;r++){rcells[r*COLS+col].classList.add('scan');}
+          await sleep(26);
+          for(let r=0;r<ROWS;r++){
+            const i=r*COLS+col;rcells[i].classList.remove('scan');
+            const a=tBits[i],b=cB[i];
+            if(a===b)match++;
+            if(a===1&&b===1)rcells[i].className='px match';
+            else if(a!==b)rcells[i].className='px miss';
+            else rcells[i].className='px';
+          }
+          score.innerHTML='重合度 <b>'+Math.round(match/CELLS*100)+'%</b>';
+        }
+        const sc=Math.round(match/CELLS*100);
+        barEls[n].querySelector('.fill').style.width=sc+'%';
+        barEls[n].querySelector('.val').textContent=sc+'%';
+        if(sc>best.score)best={n,score:sc};
+        await sleep(150);
+      }
+      // 成功：右边定格在匹配的数字，常绿
+      const wB=bits(best.n);
+      rcells.forEach((c,i)=>c.className='px'+(wB[i]?' match':''));
+      rcap.innerHTML=`✅ 匹配成功：<b style="color:#1f7a44">${best.n}</b>`;
+      score.innerHTML='重合度 <b>'+best.score+'%</b>';
+      barEls[best.n].classList.add('win');
+      strip.children[di].textContent=best.n;strip.children[di].classList.add('filled');
+      await sleep(800);
+    }
+  }
+
+  return bindRun(S, async (setPhase)=>{
+    setPhase(0);S.stitle.textContent='① 取图';await phaseCapture(D,code,false);
+    setPhase(1);S.stitle.textContent='② 图像预处理';await phasePre(D,code,false);
+    setPhase(2);await pMatch();
+    setPhase(3);S.stitle.textContent='④ 拼接提交';await phaseSubmit(D,code);
+  });
+}
+
+/* ============================================================
+   ROUND 2：OCR（特征提取 + 特征库比对）
+   ============================================================ */
+function createR2Demo(code, charset, onDone){
+  const S=demoShell('r2');S.onDone=onDone;
+  const D={body:S.body,desc:S.desc};
+  const extracted={}; // di -> feats
+
+  async function pFeature(){
+    S.stitle.textContent='③ 特征提取';
+    S.desc.textContent='不再死磕每个像素，而是提取每个字符的"形状特征"：线条走向、弯曲弧度、拐点、闭合圈、高宽比……';
+    S.body.style.flexDirection='column';S.body.innerHTML='';
+    for(let di=0;di<code.length;di++){
+      const ch=code[di];const feats=getFeats(ch);extracted[di]=feats;
+      const rowEl=document.createElement('div');rowEl.className='featrow';
+      const cbox=document.createElement('div');cbox.className='featchar analyzing';cbox.textContent=ch;
+      const tags=document.createElement('div');tags.className='ftags';
+      const tagEls=feats.map(f=>{const t=document.createElement('span');t.className='ftag '+f.t;t.textContent=f.l;tags.appendChild(t);return t;});
+      rowEl.append(cbox,tags);S.body.appendChild(rowEl);
+      await sleep(350);
+      for(const t of tagEls){t.classList.add('show');await sleep(260);}
+      cbox.classList.remove('analyzing');cbox.classList.add('done');
+      await sleep(250);
+    }
+    await sleep(500);
+  }
+
+  async function pLib(){
+    S.stitle.textContent='④ 特征库比对';
+    S.desc.textContent='把提取到的特征拿去和特征库里每个候选字符打分，分数最高的就是识别结果。';
+    S.body.style.flexDirection='column';S.body.innerHTML='';
+    const strip=document.createElement('div');strip.className='result-strip';strip.style.marginBottom='14px';
+    code.forEach(()=>{const s=document.createElement('div');s.className='slotd';strip.appendChild(s);});
+    S.body.appendChild(strip);
+
+    for(let di=0;di<code.length;di++){
+      const ch=code[di];
+      const cands=makeCandidates(ch,charset);
+      const row=document.createElement('div');row.className='librow';
+      const lc=document.createElement('div');lc.className='lc';lc.textContent=`第 ${di+1} 个字符 → 比对：`;
+      row.appendChild(lc);
+      const els={};
+      cands.forEach(c=>{const e=document.createElement('div');e.className='libchar';e.innerHTML=`${c.char}<span class="sc">0%</span>`;row.appendChild(e);els[c.char]=e;});
+      S.body.appendChild(row);
+      await sleep(300);
+      let best={char:ch,score:0};
+      for(const c of cands){
+        els[c.char].querySelector('.sc').textContent=c.score+'%';
+        if(c.score>best.score)best={char:c.char,score:c.score};
+        await sleep(260);
+      }
+      els[best.char].classList.add('best');
+      lc.innerHTML=`第 ${di+1} 个字符 → ✅ <b style="color:#1f7a44">${best.char}</b>（${best.score}%）`;
+      strip.children[di].textContent=best.char;strip.children[di].classList.add('filled');
+      await sleep(500);
+    }
+  }
+
+  return bindRun(S, async (setPhase)=>{
+    setPhase(0);S.stitle.textContent='① 取图';await phaseCapture(D,code,true);
+    setPhase(1);S.stitle.textContent='② 图像预处理';await phasePre(D,code,true);
+    setPhase(2);await pFeature();
+    setPhase(3);await pLib();
+    setPhase(4);S.stitle.textContent='⑤ 拼接提交';await phaseSubmit(D,code);
+  });
+}
+function makeCandidates(correct, charset){
+  const others=shuffle(charset.filter(c=>c!==correct));
+  const arr=[
+    {char:correct, score:rnd(86,95)},
+    {char:others[0], score:rnd(38,58)},
+    {char:others[1], score:rnd(20,38)},
+  ];
+  return shuffle(arr);
+}
+
+/* ============================================================
+   密码关卡
+   ============================================================ */
+const GATE_PASSWORD='0405';
+function setupGate(){
+  const gate=document.getElementById('gate');
+  const input=document.getElementById('gate-input');
+  const btn=document.getElementById('gate-btn');
+  const msg=document.getElementById('gate-msg');
+  function tryUnlock(){
+    if(gate.classList.contains('locked')){msg.textContent='请先完成上面的纯数字破解演示～';msg.className='gmsg no';return;}
+    if(input.value.trim()===GATE_PASSWORD){
+      msg.textContent='✅ 密码正确！正在进入「图形验证码」…';msg.className='gmsg ok';
+      const r2=document.getElementById('r2');r2.classList.remove('locked-section');
+      setTimeout(()=>r2.scrollIntoView({behavior:'smooth',block:'start'}),300);
+      btn.disabled=true;input.disabled=true;
+    }else{msg.textContent='❌ 密码不对，再试一次';msg.className='gmsg no';input.value='';input.focus();}
+  }
+  btn.addEventListener('click',tryUnlock);
+  input.addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
+}
+function openGate(){
+  const gate=document.getElementById('gate');gate.classList.remove('locked');
+  document.getElementById('gate-tip').innerHTML='🎉 第一关完成！输入老师给的<strong>4 位密码</strong>，进入「图形验证码」。';
+  document.getElementById('gate-input').focus();
+  gate.scrollIntoView({behavior:'smooth',block:'center'});
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+drawCleanPreview(document.getElementById('r1-preview'),R1_CODE);
+drawNoisyCaptcha(document.getElementById('r2-preview'),R2_CODE);
+
+const r1Demo=createR1Demo(R1_CODE,R1_CHARSET,openGate);
+setupPuzzle('r1',PIECES_R1,()=>{r1Demo.unlock();const st=document.getElementById('r1-status');st.textContent='⚔️ 破解进行中';st.className='rstatus active';});
+
+const r2Demo=createR2Demo(R2_CODE,R2_CHARSET);
+setupPuzzle('r2',PIECES_R2,()=>{r2Demo.unlock();const st=document.getElementById('r2-status');st.textContent='⚔️ 破解进行中';st.className='rstatus active';});
+
+setupGate();
+</script>
+</body>
+</html>
