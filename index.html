@@ -9,7 +9,7 @@
     --green:#2e9e5b; --green-d:#1f7a44;
     --blue:#2563eb; --purple:#7c3aed; --accent:#f4a02a;
     --ink:#243b2f; --paper:#f4f8f5; --card:#ffffff;
-    --line:#dbe7df; --bad:#e25555; --good:#37c871; --muted:#6d8377;
+    --line:#dbe7df; --bad:#e25555; --good:#37c871; --muted:#6d8377; --yellow:#b45309;
   }
   *{box-sizing:border-box;}
   body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;background:linear-gradient(180deg,#eef5f0,#f4f8f5);color:var(--ink);line-height:1.7;}
@@ -35,7 +35,9 @@
 
   .know{background:#eef4ff;border:1px solid #d4e2ff;border-radius:12px;padding:16px 18px;margin:14px 0;}
   .know h4{margin:0 0 8px;color:var(--blue);font-size:16px;}
-  .know p{margin:6px 0;font-size:14.5px;color:#41566b;}
+  .know .know-tagline{margin:0 0 10px;font-size:14px;color:var(--muted);}
+  .know .know-tagline .scheme-tag{margin-right:8px;}
+  .know p{margin:6px 0;font-size:14.5px;color:#41566b;line-height:1.8;}
   .know .hl{color:var(--green-d);font-weight:700;}
   .know .hl2{color:var(--purple);font-weight:700;}
   .scheme-tag{display:inline-block;font-size:12px;font-weight:800;padding:3px 10px;border-radius:6px;margin-right:8px;vertical-align:middle;}
@@ -193,7 +195,7 @@
     <div class="rhead">
       <span class="rnum">ROUND 1</span>
       <span class="ryear">最早期</span>
-      <span class="rtitle">纯数字验证码 · 方案一</span>
+      <span class="rtitle">纯数字验证码 · 古典 OCR</span>
       <span class="rstatus" id="r1-status">🔒 等待破解</span>
     </div>
 
@@ -203,27 +205,18 @@
     </div>
 
     <div class="know">
-      <h4><span class="scheme-tag s1">方案一</span>模板像素识别 · 【古典 OCR】</h4>
-      <p>这是早期计算机"认字"最原始、最正宗的方式。它建立在一个<b>乌托邦式假设</b>上：
-        所有字都规规矩矩、字体一模一样——就像印刷体，没有变形。</p>
-      <p><b>工作流水线</b>（请按顺序排列碎片）：</p>
-      <div class="steps-intro n4">
-        <div class="si"><div class="n">1</div><div class="t">📷 取图</div><div class="x">获取验证码图像</div></div>
-        <div class="si fatal"><div class="n">2</div><div class="t">⚙️ 图像预处理</div><div class="x">灰度·二值·去噪·字符切割</div><span class="tag">含致命切割</span></div>
-        <div class="si core"><div class="n">3</div><div class="t">🔍 像素级比对</div><div class="x">和字库模板"透贴"</div><span class="tag">核心分类</span></div>
-        <div class="si"><div class="n">4</div><div class="t">🧩 拼接提交</div><div class="x">组装识别结果</div></div>
-      </div>
-      <div class="callout warn">
-        <b>⚠️ 致命弱点</b>
-        极度依赖「字符切割」的准确性和字体的「无形变」。一旦验证码设计者让字符<b>粘连在一起（切不开）</b>，
-        或者<b>扭曲了字符（像素对不上）</b>，这套古典方法就彻底抓瞎。
-      </div>
-      <div class="guide">💡 先把下面 4 块碎片按正确流水线排好，拼对后解锁破解演示。</div>
+      <h4>📖 知识介绍</h4>
+      <p class="know-tagline"><span class="scheme-tag s1">古典 OCR</span>模板像素匹配</p>
+      <p>面对纯数字验证码，黑客的破解工具是<b style="color:var(--blue)">模板像素匹配</b>——一种简单粗暴但极其有效的方法。</p>
+      <p>核心思路分两个阶段：<b style="color:var(--purple)">① 图像预处理</b>——先对图片做"大扫除"，把彩色转灰白（灰度化）、灰白变纯黑白（二值化）、过滤掉零散噪点（去噪）、按间距把粘连字符切开（图像分割），让图片变成干干净净的独立数字块。</p>
+      <p>然后是<b style="color:var(--purple)">② 模板像素识别</b>——把每个独立数字和事先存好的 0~9"标准模板库"逐一进行像素级比对，哪个模板的像素点重合率最高，就认定是这个数字。最后把所有识别出的数字串起来提交。</p>
+      <p>这整个过程可以归纳为一条明确的破解流水线：从"拿到图片"到"提交答案"，中间有几个关键环节？它们的先后顺序是什么？</p>
+      <div class="guide">💡 <b>引导提问</b>：请仔细阅读上文，模板匹配破解需要经过哪 4 个关键步骤？从碎片池中选出正确流程并排列。</div>
     </div>
 
     <div class="puzzle" id="r1-puzzle">
-      <h4>🧩 第一步：排列【古典 OCR】工作流水线</h4>
-      <p class="ph">把 4 块碎片拖进对应的步骤格子里。</p>
+      <h4>🧩 技能卡：古典 OCR · 模板像素匹配</h4>
+      <p class="ph">阅读上方知识介绍，将 4 块碎片拖入下方正确位置。</p>
       <div class="pool" data-zone="pool"><div class="lbl">碎片池（拖我 ↓）</div></div>
       <div class="slots n4">
         <div class="slot" data-slot="0"><span class="head">第1步</span></div>
@@ -238,7 +231,7 @@
       <div class="stage-progress">
         <div class="pchip" data-p="0">① 取图</div>
         <div class="pchip" data-p="1">② 图像预处理</div>
-        <div class="pchip" data-p="2">③ 像素级比对</div>
+        <div class="pchip" data-p="2">③ 模板像素识别</div>
         <div class="pchip" data-p="3">④ 拼接提交</div>
       </div>
       <div class="panel">
@@ -259,7 +252,7 @@
   <section class="gate locked" id="gate">
     <div class="lock-icon">🔐</div>
     <h3>通关密码 · 进入下一关</h3>
-    <p id="gate-tip">完成【方案一 · 古典 OCR】破解演示后，输入老师给出的密码，即可进入【方案二 · 现代 OCR】。</p>
+    <p id="gate-tip">完成【古典 OCR】破解演示后，输入老师给出的密码，即可进入【现代 OCR】。</p>
     <div class="gatebody">
       <input id="gate-input" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
       <div class="btn-row" style="margin-top:14px;">
@@ -274,7 +267,7 @@
     <div class="rhead">
       <span class="rnum">ROUND 2</span>
       <span class="ryear">进阶</span>
-      <span class="rtitle">图形验证码 · 方案二</span>
+      <span class="rtitle">图形验证码 · 现代 OCR</span>
       <span class="rstatus" id="r2-status">🔒 等待破解</span>
     </div>
 
@@ -284,28 +277,17 @@
     </div>
 
     <div class="know">
-      <h4><span class="scheme-tag s2">方案二</span>特征提取与比对 · 【现代 OCR / 视觉技术前身】</h4>
-      <p>当验证码让古典 OCR 瘫痪后，黑客和学者引入了来自<b>计算机视觉（CV）</b>的技术——
-        标志着文字识别从<b>"死板的像素核对"</b>走向<b>"灵活的模式识别"</b>。</p>
-      <p><b>工作流水线</b>（本课演示精简为 5 步；其中「字符切割」在演示里并入预处理，标注为弱依赖）：</p>
-      <div class="steps-intro n5">
-        <div class="si"><div class="n">1</div><div class="t">📷 取图</div><div class="x">获取验证码图像</div></div>
-        <div class="si"><div class="n">2</div><div class="t">⚙️ 图像预处理</div><div class="x">灰度·二值·去噪（含弱切割）</div></div>
-        <div class="si core"><div class="n">3</div><div class="t">🔬 特征提取</div><div class="x">HOG·形状上下文等</div><span class="tag">核心革命</span></div>
-        <div class="si core"><div class="n">4</div><div class="t">🗂️ 特征库分类</div><div class="x">SVM/KNN 多维匹配</div><span class="tag">核心分类</span></div>
-        <div class="si"><div class="n">5</div><div class="t">🧩 拼接提交</div><div class="x">组装识别结果</div></div>
-      </div>
-      <div class="callout win">
-        <b>✨ 降维打击</b>
-        不再纠结「这个像素点是不是黑的」，而是理解「这是一个锐角，那是一个半圆」。
-        提取的是<b>A 之所以是 A 的拓扑结构</b>——无论验证码怎么扭曲、旋转，只要字母的「骨架」还在，就能识别出来。
-      </div>
-      <div class="guide">💡 先排好 5 步流水线，重点看「特征提取」和「特征库分类」两步。</div>
+      <h4>📖 知识介绍</h4>
+      <p class="know-tagline"><span class="scheme-tag s2">现代 OCR</span>特征提取与比对</p>
+      <p>图形验证码加了这么多干扰，简单的像素模板匹配失败了。破解者的新武器是<b style="color:var(--blue)">OCR（光学字符识别）</b>——它不再比较每个像素，而是提取字符的形状"特征"，再和特征库比对。</p>
+      <p>这次的核心升级是<b style="color:var(--purple)">特征提取</b>：不再关心每个像素点是黑是白，而是提取字符的<b>线条走向、弯曲弧度、拐点数量、高宽比</b>等几何特征。然后把这些特征和程序员手工编写的<b style="color:var(--yellow)">特征库</b>比对打分，分数最高的字符就是识别结果。</p>
+      <p>图像预处理也要更加全面：除了灰度化、二值化、去噪、分割，还需要<b style="color:var(--purple)">几何校正</b>（把扭曲的字形摆正）和<b style="color:var(--purple)">干扰剔除</b>（识别并去掉干扰线）等步骤，才能让特征提取得到准确的字形。</p>
+      <div class="guide">💡 <b>引导提问</b>：OCR 破解图形验证码的核心优势在哪里？和上一关的模板匹配相比，最大的不同是什么？理清思路后，请从碎片池中排出现代 OCR 的正确破解流程。</div>
     </div>
 
     <div class="puzzle" id="r2-puzzle">
-      <h4>🧩 第一步：排列【现代 OCR】工作流水线</h4>
-      <p class="ph">把 5 块碎片拖进对应的步骤格子里。</p>
+      <h4>🧩 技能卡：现代 OCR · 特征提取与比对</h4>
+      <p class="ph">阅读上方知识介绍，将 5 块碎片拖入下方正确位置。</p>
       <div class="pool" data-zone="pool"><div class="lbl">碎片池（拖我 ↓）</div></div>
       <div class="slots n5">
         <div class="slot" data-slot="0"><span class="head">第1步</span></div>
@@ -322,7 +304,7 @@
         <div class="pchip" data-p="0">① 取图</div>
         <div class="pchip" data-p="1">② 图像预处理</div>
         <div class="pchip" data-p="2">③ 特征提取</div>
-        <div class="pchip" data-p="3">④ 特征库分类</div>
+        <div class="pchip" data-p="3">④ 特征库比对</div>
         <div class="pchip" data-p="4">⑤ 拼接提交</div>
       </div>
       <div class="panel">
@@ -380,14 +362,14 @@ const R2_CODE = Array.from({length:4},()=>R2_CHARSET[rnd(0,R2_CHARSET.length)]);
 const PIECES_R1 = [
   {id:'capture', e:'📷', t:'取图',          correct:0},
   {id:'pre',     e:'⚙️', t:'图像预处理',    correct:1},
-  {id:'match',   e:'🔍', t:'像素级比对',    correct:2},
+  {id:'match',   e:'🔍', t:'模板像素识别',  correct:2},
   {id:'submit',  e:'🧩', t:'拼接提交',      correct:3},
 ];
 const PIECES_R2 = [
   {id:'capture', e:'📷', t:'取图',          correct:0},
   {id:'pre',     e:'⚙️', t:'图像预处理',    correct:1},
   {id:'feat',    e:'🔬', t:'特征提取',      correct:2},
-  {id:'lib',     e:'🗂️', t:'特征库分类',    correct:3},
+  {id:'lib',     e:'🗂️', t:'特征库比对',    correct:3},
   {id:'submit',  e:'🧩', t:'拼接提交',      correct:4},
 ];
 
@@ -623,7 +605,7 @@ function createR1Demo(code, library, onDone){
   const D={body:S.body,desc:S.desc};
 
   async function pMatch(){
-    S.stitle.textContent='③ 像素级比对（核心分类 · 透贴）';
+    S.stitle.textContent='③ 模板像素识别';
     S.desc.textContent='【核心分类】拿切割好的单字像素矩阵，和本地字库模板做「透贴」——计算黑白像素的物理重合率。左边固定，右边逐个模板比对，最高分定格为绿色。';
     S.body.style.flexDirection='column';S.body.innerHTML='';
 
@@ -728,8 +710,8 @@ function createR2Demo(code, charset, onDone){
   }
 
   async function pLib(){
-    S.stitle.textContent='④ 特征库分类（核心分类）';
-    S.desc.textContent='【核心分类】将特征向量送入机器学习分类器（如 SVM、KNN），在多维特征空间中寻找最相似的字母类别——分数最高者胜出。';
+    S.stitle.textContent='④ 特征库比对（核心分类）';
+    S.desc.textContent='【核心分类】将提取出的特征与特征库逐一比对打分（如 SVM、KNN），在多维特征空间中寻找最相似的字母类别——分数最高者胜出。';
     S.body.style.flexDirection='column';S.body.innerHTML='';
     const strip=document.createElement('div');strip.className='result-strip';strip.style.marginBottom='14px';
     code.forEach(()=>{const s=document.createElement('div');s.className='slotd';strip.appendChild(s);});
@@ -799,7 +781,7 @@ function setupGate(){
 }
 function openGate(){
   const gate=document.getElementById('gate');gate.classList.remove('locked');
-  document.getElementById('gate-tip').innerHTML='🎉 方案一完成！输入老师给的<strong>4 位密码</strong>，进入【方案二 · 现代 OCR / 特征提取与比对】。';
+  document.getElementById('gate-tip').innerHTML='🎉 古典 OCR 完成！输入老师给的<strong>4 位密码</strong>，进入【现代 OCR · 特征提取与比对】。';
   document.getElementById('gate-input').focus();
   gate.scrollIntoView({behavior:'smooth',block:'center'});
 }
