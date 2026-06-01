@@ -199,7 +199,7 @@
 
     <div class="center">
       <canvas id="r1-preview" width="320" height="90"></canvas>
-      <div class="tip">▲ 纯数字、白底、无背景干扰 —— 电脑要怎么自动认出这几个数字？</div>
+      <div class="tip">▲ 规规矩矩的纯数字 · 白底无干扰 —— 正好满足古典 OCR「字体一模一样」的乌托邦假设</div>
     </div>
 
     <div class="know">
@@ -207,31 +207,29 @@
       <p>这是早期计算机"认字"最原始、最正宗的方式。它建立在一个<b>乌托邦式假设</b>上：
         所有字都规规矩矩、字体一模一样——就像印刷体，没有变形。</p>
       <p><b>工作流水线</b>（请按顺序排列碎片）：</p>
-      <div class="steps-intro n5">
+      <div class="steps-intro n4">
         <div class="si"><div class="n">1</div><div class="t">📷 取图</div><div class="x">获取验证码图像</div></div>
-        <div class="si"><div class="n">2</div><div class="t">⚙️ 图像预处理</div><div class="x">灰度化·二值化·去噪</div></div>
-        <div class="si fatal"><div class="n">3</div><div class="t">✂️ 字符切割</div><div class="x">切成单个字符</div><span class="tag">致命环节</span></div>
-        <div class="si core"><div class="n">4</div><div class="t">🔍 像素级比对</div><div class="x">和字库模板"透贴"</div><span class="tag">核心分类</span></div>
-        <div class="si"><div class="n">5</div><div class="t">🧩 拼接提交</div><div class="x">组装识别结果</div></div>
+        <div class="si fatal"><div class="n">2</div><div class="t">⚙️ 图像预处理</div><div class="x">灰度·二值·去噪·字符切割</div><span class="tag">含致命切割</span></div>
+        <div class="si core"><div class="n">3</div><div class="t">🔍 像素级比对</div><div class="x">和字库模板"透贴"</div><span class="tag">核心分类</span></div>
+        <div class="si"><div class="n">4</div><div class="t">🧩 拼接提交</div><div class="x">组装识别结果</div></div>
       </div>
       <div class="callout warn">
         <b>⚠️ 致命弱点</b>
         极度依赖「字符切割」的准确性和字体的「无形变」。一旦验证码设计者让字符<b>粘连在一起（切不开）</b>，
         或者<b>扭曲了字符（像素对不上）</b>，这套古典方法就彻底抓瞎。
       </div>
-      <div class="guide">💡 先把下面 5 块碎片按正确流水线排好，拼对后解锁破解演示。</div>
+      <div class="guide">💡 先把下面 4 块碎片按正确流水线排好，拼对后解锁破解演示。</div>
     </div>
 
     <div class="puzzle" id="r1-puzzle">
       <h4>🧩 第一步：排列【古典 OCR】工作流水线</h4>
-      <p class="ph">把 5 块碎片拖进对应的步骤格子里。</p>
+      <p class="ph">把 4 块碎片拖进对应的步骤格子里。</p>
       <div class="pool" data-zone="pool"><div class="lbl">碎片池（拖我 ↓）</div></div>
-      <div class="slots n5">
+      <div class="slots n4">
         <div class="slot" data-slot="0"><span class="head">第1步</span></div>
         <div class="slot" data-slot="1"><span class="head">第2步</span></div>
         <div class="slot" data-slot="2"><span class="head">第3步</span></div>
         <div class="slot" data-slot="3"><span class="head">第4步</span></div>
-        <div class="slot" data-slot="4"><span class="head">第5步</span></div>
       </div>
       <div class="pstatus">把碎片拖进格子吧～</div>
     </div>
@@ -240,13 +238,12 @@
       <div class="stage-progress">
         <div class="pchip" data-p="0">① 取图</div>
         <div class="pchip" data-p="1">② 图像预处理</div>
-        <div class="pchip" data-p="2">③ 字符切割</div>
-        <div class="pchip" data-p="3">④ 像素级比对</div>
-        <div class="pchip" data-p="4">⑤ 拼接提交</div>
+        <div class="pchip" data-p="2">③ 像素级比对</div>
+        <div class="pchip" data-p="3">④ 拼接提交</div>
       </div>
       <div class="panel">
         <h3 class="stitle">准备就绪</h3>
-        <p class="desc">流程排对后即可解锁。演示古典 OCR 如何把规规矩矩的纯数字验证码"透贴"认出来。</p>
+        <p class="desc">流程排对后即可解锁。预处理内含字符切割，再看像素级「透贴」比对。</p>
         <div class="sbody row"></div>
       </div>
       <div class="success-banner">✅ 验证通过！电脑成功识别出验证码</div>
@@ -262,7 +259,7 @@
   <section class="gate locked" id="gate">
     <div class="lock-icon">🔐</div>
     <h3>通关密码 · 进入下一关</h3>
-    <p id="gate-tip">完成上面的"纯数字验证码"破解演示后，输入老师给出的密码，即可进入「图形验证码」。</p>
+    <p id="gate-tip">完成【方案一 · 古典 OCR】破解演示后，输入老师给出的密码，即可进入【方案二 · 现代 OCR】。</p>
     <div class="gatebody">
       <input id="gate-input" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
       <div class="btn-row" style="margin-top:14px;">
@@ -381,17 +378,17 @@ const R1_CODE = Array.from({length:4},()=>R1_CHARSET[rnd(0,R1_CHARSET.length)]);
 const R2_CODE = Array.from({length:4},()=>R2_CHARSET[rnd(0,R2_CHARSET.length)]);
 
 const PIECES_R1 = [
-  {id:'capture', e:'📷', t:'取图',        correct:0},
-  {id:'pre',     e:'⚙️', t:'图像预处理',  correct:1},
-  {id:'match',   e:'🔍', t:'模板像素识别',correct:2},
-  {id:'submit',  e:'🧩', t:'拼接提交',    correct:3},
+  {id:'capture', e:'📷', t:'取图',          correct:0},
+  {id:'pre',     e:'⚙️', t:'图像预处理',    correct:1},
+  {id:'match',   e:'🔍', t:'像素级比对',    correct:2},
+  {id:'submit',  e:'🧩', t:'拼接提交',      correct:3},
 ];
 const PIECES_R2 = [
-  {id:'capture', e:'📷', t:'取图',        correct:0},
-  {id:'pre',     e:'⚙️', t:'图像预处理',  correct:1},
-  {id:'feat',    e:'🔬', t:'特征提取',    correct:2},
-  {id:'lib',     e:'🗂️', t:'特征库比对',  correct:3},
-  {id:'submit',  e:'🧩', t:'拼接提交',    correct:4},
+  {id:'capture', e:'📷', t:'取图',          correct:0},
+  {id:'pre',     e:'⚙️', t:'图像预处理',    correct:1},
+  {id:'feat',    e:'🔬', t:'特征提取',      correct:2},
+  {id:'lib',     e:'🗂️', t:'特征库分类',    correct:3},
+  {id:'submit',  e:'🧩', t:'拼接提交',      correct:4},
 ];
 
 /* 字符形状特征库 */
@@ -527,7 +524,8 @@ async function phaseCapture(D, code, noisy){
   if(noisy)drawNoisyCaptcha(cv,code);else drawCleanPreview(cv,code);
   await sleep(60);cv.style.opacity=1;await sleep(1300);
 }
-async function phasePre(D, code, noisy){
+async function phasePre(D, code, noisy, opts){
+  opts=opts||{};
   D.body.style.flexDirection='row';D.body.innerHTML='';
   const st=stackEl();
   const cv=document.createElement('canvas');cv.width=noisy?340:320;cv.height=100;cv.style.width=cv.width+'px';
@@ -535,26 +533,37 @@ async function phasePre(D, code, noisy){
   const ctx=cv.getContext('2d');
   if(noisy)drawNoisyCaptcha(cv,code);else drawCleanPreview(cv,code);
 
-  D.desc.textContent=noisy?'第①步 灰度化：丢掉所有颜色，只保留明暗。':'第①步 灰度化：纯数字本就接近黑白，很轻松。';
+  D.desc.textContent=noisy
+    ? '图像预处理① 灰度化：丢掉所有颜色，只保留明暗（与方案一相同）。'
+    : '图像预处理① 灰度化：纯数字本就接近黑白，古典 OCR 很轻松。';
   cap.textContent='灰度化';await sleep(800);
   let img=ctx.getImageData(0,0,cv.width,cv.height),d=img.data;
   for(let i=0;i<d.length;i+=4){const g=0.3*d[i]+0.59*d[i+1]+0.11*d[i+2];d[i]=d[i+1]=d[i+2]=g;}
   ctx.putImageData(img,0,0);await sleep(1000);
 
-  D.desc.textContent='第②步 二值化：定个阈值，比它暗算"黑"，比它亮算"白"。只剩黑白两色。';
+  D.desc.textContent='图像预处理② 二值化：变成纯黑白两色，为后续切割和比对做准备。';
   cap.textContent='二值化（非黑即白）';await sleep(800);
   img=ctx.getImageData(0,0,cv.width,cv.height);d=img.data;
   const thr=noisy?165:150;
   for(let i=0;i<d.length;i+=4){const v=d[i]<thr?0:255;d[i]=d[i+1]=d[i+2]=v;}
   ctx.putImageData(img,0,0);await sleep(1100);
 
-  D.desc.textContent=noisy?'第③步 去噪 + 去干扰线：清除零散黑点、擦掉穿过字符的干扰线。':'第③步 去噪：清掉零散小黑点。';
+  D.desc.textContent=noisy
+    ? '图像预处理③ 去噪 + 去干扰线：清除噪点、擦掉干扰线（现代 OCR 仍需要这一步）。'
+    : '图像预处理③ 去噪：清掉零散小黑点。';
   cap.textContent=noisy?'去噪 + 去干扰线':'去噪后';await sleep(800);
   drawCleanBinary(cv,code);await sleep(1000);
 
-  D.desc.textContent=noisy?'第④步 校正 + 分割：把扭曲的字符摆正，再切成独立小块。':'第④步 分割：切成独立数字小块。';
-  cap.textContent='校正并分割';await sleep(700);
-  await drawSegments(cv,code);await sleep(1200);
+  if(!noisy){
+    D.desc.textContent='图像预处理④ 字符切割（致命环节，并入本步）：精准切分为单个字符，切错了后面全盘皆输。';
+    cap.textContent='字符切割';await sleep(700);
+    await drawSegments(cv,code);await sleep(1200);
+  }else if(opts.weakSegment){
+    D.desc.textContent='（弱依赖）字符切割：现代 OCR 对「切得完美」依赖降低，演示中并入预处理。';
+    cap.textContent='弱依赖 · 粗略分割';await sleep(700);
+    await drawSegments(cv,code);await sleep(1000);
+  }
+  return cv;
 }
 async function phaseSubmit(D, code){
   D.desc.textContent='把识别结果按顺序拼起来，作为答案自动提交。';
@@ -614,8 +623,8 @@ function createR1Demo(code, library, onDone){
   const D={body:S.body,desc:S.desc};
 
   async function pMatch(){
-    S.stitle.textContent='③ 模板像素识别（核心！左右对比）';
-    S.desc.textContent='左边固定显示待识别字符；右边逐个换上 0~9 模板做逐像素比对，重合率最高的就是答案，最后会定格在匹配的数字上并保持绿色。';
+    S.stitle.textContent='③ 像素级比对（核心分类 · 透贴）';
+    S.desc.textContent='【核心分类】拿切割好的单字像素矩阵，和本地字库模板做「透贴」——计算黑白像素的物理重合率。左边固定，右边逐个模板比对，最高分定格为绿色。';
     S.body.style.flexDirection='column';S.body.innerHTML='';
 
     const cmp=document.createElement('div');cmp.className='cmp';
@@ -631,7 +640,7 @@ function createR1Demo(code, library, onDone){
     const bars=document.createElement('div');bars.className='bars';
     const barEls={};
     library.forEach(n=>{const b=document.createElement('div');b.className='bar';b.innerHTML=`<span class="lab">${n}</span><span class="track"><span class="fill"></span></span><span class="val">0%</span>`;bars.appendChild(b);barEls[n]=b;});
-    const barsWrap=stackEl();const bcap=capEl('各模板重合度打分');barsWrap.append(bcap,bars);
+    const barsWrap=stackEl();const bcap=capEl('字库模板 · 物理重合率打分');barsWrap.append(bcap,bars);
 
     const strip=document.createElement('div');strip.className='result-strip';
     code.forEach(()=>{const s=document.createElement('div');s.className='slotd';strip.appendChild(s);});
@@ -685,7 +694,7 @@ function createR1Demo(code, library, onDone){
 
   return bindRun(S, async (setPhase)=>{
     setPhase(0);S.stitle.textContent='① 取图';await phaseCapture(D,code,false);
-    setPhase(1);S.stitle.textContent='② 图像预处理';await phasePre(D,code,false);
+    setPhase(1);S.stitle.textContent='② 图像预处理（含字符切割）';await phasePre(D,code,false);
     setPhase(2);await pMatch();
     setPhase(3);S.stitle.textContent='④ 拼接提交';await phaseSubmit(D,code);
   });
@@ -700,8 +709,8 @@ function createR2Demo(code, charset, onDone){
   const extracted={}; // di -> feats
 
   async function pFeature(){
-    S.stitle.textContent='③ 特征提取';
-    S.desc.textContent='不再死磕每个像素，而是提取每个字符的"形状特征"：线条走向、弯曲弧度、拐点、闭合圈、高宽比……';
+    S.stitle.textContent='③ 特征提取（核心革命）';
+    S.desc.textContent='【核心革命】丢弃像素矩阵！转而计算高维数学特征——如形状上下文 Shape Context、边缘方向直方图 HOG、角点特征等。提取的是「A 之所以是 A 的拓扑结构」。';
     S.body.style.flexDirection='column';S.body.innerHTML='';
     for(let di=0;di<code.length;di++){
       const ch=code[di];const feats=getFeats(ch);extracted[di]=feats;
@@ -719,8 +728,8 @@ function createR2Demo(code, charset, onDone){
   }
 
   async function pLib(){
-    S.stitle.textContent='④ 特征库比对';
-    S.desc.textContent='把提取到的特征拿去和特征库里每个候选字符打分，分数最高的就是识别结果。';
+    S.stitle.textContent='④ 特征库分类（核心分类）';
+    S.desc.textContent='【核心分类】将特征向量送入机器学习分类器（如 SVM、KNN），在多维特征空间中寻找最相似的字母类别——分数最高者胜出。';
     S.body.style.flexDirection='column';S.body.innerHTML='';
     const strip=document.createElement('div');strip.className='result-strip';strip.style.marginBottom='14px';
     code.forEach(()=>{const s=document.createElement('div');s.className='slotd';strip.appendChild(s);});
@@ -751,7 +760,7 @@ function createR2Demo(code, charset, onDone){
 
   return bindRun(S, async (setPhase)=>{
     setPhase(0);S.stitle.textContent='① 取图';await phaseCapture(D,code,true);
-    setPhase(1);S.stitle.textContent='② 图像预处理';await phasePre(D,code,true);
+    setPhase(1);S.stitle.textContent='② 图像预处理（含弱依赖切割）';await phasePre(D,code,true,{weakSegment:true});
     setPhase(2);await pFeature();
     setPhase(3);await pLib();
     setPhase(4);S.stitle.textContent='⑤ 拼接提交';await phaseSubmit(D,code);
@@ -790,7 +799,7 @@ function setupGate(){
 }
 function openGate(){
   const gate=document.getElementById('gate');gate.classList.remove('locked');
-  document.getElementById('gate-tip').innerHTML='🎉 第一关完成！输入老师给的<strong>4 位密码</strong>，进入「图形验证码」。';
+  document.getElementById('gate-tip').innerHTML='🎉 方案一完成！输入老师给的<strong>4 位密码</strong>，进入【方案二 · 现代 OCR / 特征提取与比对】。';
   document.getElementById('gate-input').focus();
   gate.scrollIntoView({behavior:'smooth',block:'center'});
 }
