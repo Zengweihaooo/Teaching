@@ -39,29 +39,24 @@
   .scroll-progress{position:fixed;top:0;left:0;right:0;height:3px;z-index:100;background:transparent;pointer-events:none;}
   .scroll-progress-bar{height:100%;width:0;background:linear-gradient(90deg,var(--green),var(--teal),var(--blue),var(--purple));box-shadow:0 0 16px rgba(16,185,129,.6);transition:width .12s linear;}
 
-  /* 鼠标光晕 */
+  /* 鼠标光晕（不使用 mix-blend，降低重绘开销） */
   .spotlight{
-    position:fixed;width:540px;height:540px;border-radius:50%;z-index:0;pointer-events:none;
-    background:radial-gradient(circle,rgba(16,185,129,.10),rgba(59,130,246,.06) 45%,transparent 70%);
+    position:fixed;width:440px;height:440px;border-radius:50%;z-index:0;pointer-events:none;
+    background:radial-gradient(circle,rgba(16,185,129,.12),rgba(59,130,246,.05) 48%,transparent 70%);
     transform:translate(-50%,-50%);left:50%;top:30%;
-    transition:opacity .6s var(--ease);mix-blend-mode:multiply;opacity:0;
+    transition:opacity .6s var(--ease);opacity:0;will-change:left,top;
   }
 
-  /* 动态背景 */
+  /* 动态背景（背景层保持静止，避免持续触发玻璃卡片重新模糊，性能更好） */
   .bg-mesh{position:fixed;inset:0;z-index:-2;overflow:hidden;pointer-events:none;}
   .bg-mesh::before{
-    content:"";position:absolute;inset:-15%;
+    content:"";position:absolute;inset:0;
     background:
       radial-gradient(ellipse 70% 50% at 18% -8%, rgba(16,185,129,.22), transparent 55%),
       radial-gradient(ellipse 55% 45% at 92% 8%, rgba(59,130,246,.18), transparent 52%),
       radial-gradient(ellipse 60% 55% at 50% 105%, rgba(139,92,246,.16), transparent 55%),
       radial-gradient(ellipse 45% 40% at 80% 80%, rgba(20,184,166,.12), transparent 55%),
       linear-gradient(180deg, #ecfdf5 0%, #eef2f7 38%, #eef4f9 70%, #eef0f6 100%);
-    animation:auroraShift 26s ease-in-out infinite;
-  }
-  @keyframes auroraShift{
-    0%,100%{transform:translate3d(0,0,0) scale(1);}
-    50%{transform:translate3d(-2%,-2%,0) scale(1.06);}
   }
   /* 细网格叠加层（带遮罩淡出） */
   .bg-mesh::after{
@@ -73,14 +68,14 @@
     -webkit-mask:radial-gradient(ellipse 75% 65% at 50% 25%,#000 25%,transparent 78%);
             mask:radial-gradient(ellipse 75% 65% at 50% 25%,#000 25%,transparent 78%);
   }
-  .orb{position:absolute;border-radius:50%;filter:blur(72px);opacity:.5;animation:orbFloat 18s ease-in-out infinite;will-change:transform;}
-  .orb.o1{width:440px;height:440px;background:radial-gradient(circle,#6ee7b7,#10b981);top:-130px;left:-90px;animation-delay:0s;}
-  .orb.o2{width:380px;height:380px;background:radial-gradient(circle,#93c5fd,#3b82f6);top:28%;right:-110px;animation-delay:-6s;}
-  .orb.o3{width:320px;height:320px;background:radial-gradient(circle,#c4b5fd,#8b5cf6);bottom:-90px;left:24%;animation-delay:-12s;}
+  /* 两颗发光球体：很慢、很轻，仅作氛围点缀 */
+  .orb{position:absolute;border-radius:50%;filter:blur(64px);opacity:.4;animation:orbFloat 40s ease-in-out infinite;will-change:transform;}
+  .orb.o1{width:420px;height:420px;background:radial-gradient(circle,#6ee7b7,#10b981);top:-130px;left:-90px;animation-delay:0s;}
+  .orb.o2{width:360px;height:360px;background:radial-gradient(circle,#c4b5fd,#8b5cf6);bottom:-90px;right:-100px;animation-delay:-20s;}
+  .orb.o3{display:none;}
   @keyframes orbFloat{
-    0%,100%{transform:translate(0,0) scale(1);}
-    33%{transform:translate(34px,-28px) scale(1.06);}
-    66%{transform:translate(-22px,22px) scale(.94);}
+    0%,100%{transform:translate(0,0);}
+    50%{transform:translate(26px,-22px);}
   }
 
   .wrap{max-width:1060px;margin:0 auto;padding:28px 20px 110px;position:relative;z-index:1;}
@@ -121,7 +116,7 @@
 
   /* 关卡卡片 */
   .round{
-    background:var(--card);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
+    background:rgba(255,255,255,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
     border:1px solid rgba(255,255,255,.6);border-radius:var(--radius);
     padding:34px 36px;margin:30px 0;position:relative;
     box-shadow:var(--shadow), inset 0 1px 0 rgba(255,255,255,.7);
@@ -357,13 +352,54 @@
   .dot.g{background:var(--good);} .dot.r{background:var(--bad);} .dot.d{background:#334155;}
 
   .bars{display:flex;flex-direction:column;gap:7px;width:320px;max-width:100%;}
-  .bar{display:flex;align-items:center;gap:10px;font-size:13px;}
-  .bar .lab{width:22px;text-align:center;font-weight:700;font-family:"JetBrains Mono",monospace;}
-  .bar .track{flex:1;height:17px;background:#e2e8f0;border-radius:999px;overflow:hidden;box-shadow:inset 0 1px 3px rgba(15,23,42,.08);}
-  .bar .fill{height:100%;width:0;background:linear-gradient(90deg,#86efac,var(--green));border-radius:999px;transition:width .45s var(--ease);}
-  .bar .val{width:44px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12px;}
-  .bar.win .fill{background:linear-gradient(90deg,var(--green),var(--teal));box-shadow:0 0 14px var(--green-glow);}
+  .bar{display:flex;align-items:center;gap:10px;font-size:13px;--bar-color:#94a3b8;--pct:0%;}
+  .bar .lab{width:22px;text-align:center;font-weight:700;font-family:"JetBrains Mono",monospace;transition:color .35s var(--ease);}
+  /* 轨道：左侧按 --pct 显示对应颜色，右侧为浅灰未得分区 */
+  .bar .track{
+    flex:1;height:18px;border-radius:999px;overflow:hidden;
+    box-shadow:inset 0 1px 3px rgba(15,23,42,.1);
+    background:linear-gradient(to right,
+      var(--bar-color) 0,
+      var(--bar-color) var(--pct),
+      #e2e8f0 var(--pct),
+      #e2e8f0 100%);
+    transition:background .5s var(--ease), box-shadow .4s var(--ease);
+    position:relative;
+  }
+  .bar .fill{
+    display:block;height:100%;width:0;min-width:0;border-radius:999px;
+    position:relative;overflow:hidden;pointer-events:none;
+    transition:width .5s var(--ease);
+  }
+  /* 扫光（填充时） */
+  .bar.filling .fill::after{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.45),transparent);
+    animation:barShine .65s var(--ease);
+  }
+  @keyframes barShine{from{transform:translateX(-100%);}to{transform:translateX(100%);}}
+  /* 低分：红 */
+  .bar.tier-low{--bar-color:#ef4444;}
+  .bar.tier-low .track{box-shadow:inset 0 1px 3px rgba(15,23,42,.1), 0 0 12px rgba(239,68,68,.2);}
+  .bar.tier-low .val{color:#dc2626;font-weight:700;}
+  .bar.tier-low .lab{color:#dc2626;}
+  /* 中分：黄 */
+  .bar.tier-mid{--bar-color:#f59e0b;}
+  .bar.tier-mid .track{box-shadow:inset 0 1px 3px rgba(15,23,42,.1), 0 0 12px rgba(245,158,11,.2);}
+  .bar.tier-mid .val{color:#d97706;font-weight:700;}
+  .bar.tier-mid .lab{color:#d97706;}
+  /* 高分：绿（约 75%+） */
+  .bar.tier-high{--bar-color:#10b981;}
+  .bar.tier-high .track{box-shadow:inset 0 1px 3px rgba(15,23,42,.1), 0 0 12px rgba(16,185,129,.2);}
+  .bar.tier-high .val{color:var(--green-d);font-weight:700;}
+  .bar.tier-high .lab{color:var(--green-d);}
+  .bar .val{width:44px;text-align:right;font-variant-numeric:tabular-nums;color:var(--muted);font-family:"JetBrains Mono",monospace;font-size:12px;transition:color .35s var(--ease);}
+  /* 胜出模板：满分绿 + 呼吸光 */
+  .bar.win{--bar-color:#059669;}
+  .bar.win .track{animation:barWinPulse 1.4s ease-in-out infinite;box-shadow:inset 0 1px 3px rgba(15,23,42,.1), 0 0 16px var(--green-glow);}
   .bar.win .lab{color:var(--green-d);}
+  .bar.win .val{color:var(--green-d);}
+  @keyframes barWinPulse{0%,100%{filter:brightness(1);}50%{filter:brightness(1.1);}}
 
   .featchar{
     width:52px;height:62px;border:2px solid var(--line);border-radius:14px;
@@ -425,7 +461,7 @@
 
   /* 密码关 */
   .gate{
-    background:var(--card);backdrop-filter:blur(22px) saturate(140%);-webkit-backdrop-filter:blur(22px) saturate(140%);
+    background:rgba(255,255,255,.78);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
     border:2px solid rgba(255,255,255,.6);border-radius:var(--radius);
     padding:38px 30px;margin:30px 0;text-align:center;
     box-shadow:var(--shadow-lg), inset 0 1px 0 rgba(255,255,255,.7);position:relative;overflow:hidden;
@@ -456,6 +492,26 @@
     border-color:var(--green);box-shadow:0 0 0 5px rgba(16,185,129,.18);
     transform:scale(1.03);
   }
+  .gate input:disabled{background:rgba(241,245,249,.85);color:#94a3b8;cursor:not-allowed;border-style:dashed;}
+  /* 倒计时 */
+  .gate-timer{
+    display:inline-flex;align-items:center;gap:8px;margin:0 auto 18px;
+    padding:10px 20px;border-radius:999px;font-size:14px;font-weight:700;position:relative;
+    background:linear-gradient(135deg,rgba(245,158,11,.14),rgba(239,68,68,.08));
+    border:1px solid rgba(245,158,11,.3);color:#b45309;
+    transition:all .4s var(--ease);
+  }
+  .gate-timer b{font-family:"JetBrains Mono",monospace;font-size:18px;font-variant-numeric:tabular-nums;letter-spacing:1px;}
+  .gate-timer.counting{animation:timerPulse 1s ease-in-out infinite;}
+  @keyframes timerPulse{0%,100%{box-shadow:0 0 0 rgba(245,158,11,0);}50%{box-shadow:0 0 22px rgba(245,158,11,.35);}}
+  .gate-timer.ready{
+    background:linear-gradient(135deg,rgba(16,185,129,.16),rgba(20,184,166,.08));
+    border-color:rgba(16,185,129,.35);color:var(--green-d);
+    animation:timerReady .6s var(--ease-bounce);
+  }
+  @keyframes timerReady{0%{transform:scale(.9);}55%{transform:scale(1.06);}100%{transform:scale(1);}}
+  .gate-timer-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:18px;}
+  .btn-timer-reset{padding:9px 18px;font-size:13px;}
   .gate .gmsg{margin-top:16px;font-weight:700;min-height:24px;font-size:14px;position:relative;}
   .gate .gmsg.no{color:var(--bad);}
   .gate .gmsg.ok{color:var(--green-d);}
@@ -562,8 +618,12 @@
     <div class="lock-icon">🔐</div>
     <h3>通关密码 · 进入下一关</h3>
     <p id="gate-tip">完成【古典 OCR】破解演示后，输入老师给出的密码，即可进入【现代 OCR】。</p>
+    <div class="gate-timer-wrap">
+      <div class="gate-timer" id="gate-timer">⏳ 准备中…</div>
+      <button type="button" class="btn btn-ghost btn-timer-reset" id="gate-reset-timer">↻ 重置倒计时</button>
+    </div>
     <div class="gatebody">
-      <input id="gate-input" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off">
+      <input id="gate-input" type="text" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" disabled>
       <div class="btn-row" style="margin-top:14px;">
         <button class="btn btn-main" id="gate-btn">🔓 解锁下一关</button>
       </div>
@@ -781,6 +841,41 @@ function makeGrid(bitsArr){
 function capEl(t){const d=document.createElement('div');d.className='cap';d.textContent=t;return d;}
 function stackEl(){const d=document.createElement('div');d.className='stack';return d;}
 
+/* 字库打分条：按重合率着色 + 宽度动画 */
+function barScoreTier(pct){
+  if(pct>=75) return 'tier-high';
+  if(pct>=45) return 'tier-mid';
+  return 'tier-low';
+}
+function setBarScore(bar,pct){
+  const track=bar.querySelector('.track');
+  const fill=bar.querySelector('.fill');
+  const val=bar.querySelector('.val');
+  const p=Math.max(0,Math.min(100,Math.round(pct)));
+  bar.classList.remove('tier-high','tier-mid','tier-low');
+  if(p>0) bar.classList.add(barScoreTier(p));
+  bar.style.setProperty('--pct',p+'%');
+  bar.classList.remove('filling');
+  void bar.offsetWidth;
+  bar.classList.add('filling');
+  if(fill) fill.style.width=p+'%';
+  if(track) track.style.setProperty('--pct',p+'%');
+  val.textContent=p+'%';
+  clearTimeout(bar._fillT);
+  bar._fillT=setTimeout(()=>bar.classList.remove('filling'),650);
+}
+function resetBars(barEls){
+  Object.values(barEls).forEach(b=>{
+    b.classList.remove('win','tier-high','tier-mid','tier-low','filling');
+    b.style.setProperty('--pct','0%');
+    const fill=b.querySelector('.fill');
+    if(fill) fill.style.width='0';
+    b.querySelector('.val').textContent='0%';
+    b.querySelector('.val').style.color='';
+    b.querySelector('.lab').style.color='';
+  });
+}
+
 /* 干净二值字符 / 分割 */
 function drawCleanBinary(canvas, code){
   const ctx=canvas.getContext('2d'),W=canvas.width,H=canvas.height;
@@ -944,7 +1039,7 @@ function createR1Demo(code, library, onDone){
       // 左边固定显示待识别字符，全程不变色
       lcells.forEach((c,i)=>c.className='px'+(tBits[i]?' on':''));
       lcap.textContent=`待识别字符（第 ${di+1} 个）`;
-      Object.values(barEls).forEach(b=>{b.classList.remove('win');b.querySelector('.fill').style.width='0';b.querySelector('.val').textContent='0%';});
+      resetBars(barEls);
       let best={n:library[0],score:-1};
 
       for(const n of library){
@@ -964,11 +1059,12 @@ function createR1Demo(code, library, onDone){
             else if(a!==b)rcells[i].className='px miss';
             else rcells[i].className='px';
           }
-          score.innerHTML='重合度 <b>'+Math.round(match/CELLS*100)+'%</b>';
+          const partial=Math.round(match/CELLS*100);
+          setBarScore(barEls[n],partial);
+          score.innerHTML='重合度 <b>'+partial+'%</b>';
         }
         const sc=Math.round(match/CELLS*100);
-        barEls[n].querySelector('.fill').style.width=sc+'%';
-        barEls[n].querySelector('.val').textContent=sc+'%';
+        setBarScore(barEls[n],sc);
         if(sc>best.score)best={n,score:sc};
         await sleep(150);
       }
@@ -1071,12 +1167,68 @@ function makeCandidates(correct, charset){
    密码关卡
    ============================================================ */
 const GATE_PASSWORD='0405';
+const COUNTDOWN_MS=60*1000;                 // 倒计时 1 分钟
+const COUNTDOWN_KEY='captcha_gate_unlock_at'; // 记录"可输入时刻"，刷新不重置
+let countdownDone=false;
+let countdownIv=null;
+
+function setupCountdown(){
+  const input=document.getElementById('gate-input');
+  const timer=document.getElementById('gate-timer');
+  const resetBtn=document.getElementById('gate-reset-timer');
+  const fmt=ms=>{
+    const s=Math.max(0,Math.ceil(ms/1000));
+    return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+  };
+  function finish(){
+    countdownDone=true;
+    input.disabled=false;
+    timer.innerHTML='✅ 倒计时结束，现在可以输入密码';
+    timer.className='gate-timer ready';
+    if(countdownIv){clearInterval(countdownIv);countdownIv=null;}
+  }
+  function runCountdown(unlockAt){
+    if(countdownIv) clearInterval(countdownIv);
+    function tick(){
+      const rem=unlockAt-Date.now();
+      if(rem<=0){finish();return;}
+      countdownDone=false;
+      input.disabled=true;
+      timer.innerHTML='⏳ 距离可输入密码还有 <b>'+fmt(rem)+'</b>';
+      timer.className='gate-timer counting';
+    }
+    if(unlockAt-Date.now()<=0){finish();return;}
+    tick();
+    countdownIv=setInterval(tick,250);
+  }
+  function initFromStorage(){
+    let unlockAt=parseInt(localStorage.getItem(COUNTDOWN_KEY)||'0',10);
+    if(!unlockAt || isNaN(unlockAt)){
+      unlockAt=Date.now()+COUNTDOWN_MS;
+      localStorage.setItem(COUNTDOWN_KEY,String(unlockAt));
+    }
+    runCountdown(unlockAt);
+  }
+  resetBtn.addEventListener('click',()=>{
+    const unlockAt=Date.now()+COUNTDOWN_MS;
+    localStorage.setItem(COUNTDOWN_KEY,String(unlockAt));
+    countdownDone=false;
+    input.disabled=true;
+    input.value='';
+    runCountdown(unlockAt);
+    const msg=document.getElementById('gate-msg');
+    if(msg){msg.textContent='已重新开始 1 分钟倒计时';msg.className='gmsg';}
+  });
+  initFromStorage();
+}
+
 function setupGate(){
   const gate=document.getElementById('gate');
   const input=document.getElementById('gate-input');
   const btn=document.getElementById('gate-btn');
   const msg=document.getElementById('gate-msg');
   function tryUnlock(){
+    if(!countdownDone){msg.textContent='⏳ 倒计时还没结束，请稍候再输入～';msg.className='gmsg no';return;}
     if(gate.classList.contains('locked')){msg.textContent='请先完成上面的纯数字破解演示～';msg.className='gmsg no';return;}
     if(input.value.trim()===GATE_PASSWORD){
       msg.textContent='✅ 密码正确！正在进入「图形验证码」…';msg.className='gmsg ok';
@@ -1108,6 +1260,7 @@ const r2Demo=createR2Demo(R2_CODE,R2_CHARSET);
 setupPuzzle('r2',PIECES_R2,()=>{r2Demo.unlock();const st=document.getElementById('r2-status');st.textContent='⚔️ 破解进行中';st.className='rstatus active';});
 
 setupGate();
+setupCountdown();
 
 /* 滚动入场 + 预览区微动效 */
 (function initUI(){
